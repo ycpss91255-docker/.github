@@ -1,6 +1,6 @@
 # ycpss91255-docker
 
-Docker containerized environments for ROS robotics development and deployment.
+Docker containerized environments for ROS robotics development, AI agent tools, and deployment.
 
 ---
 
@@ -29,6 +29,15 @@ Docker containerized environments for ROS robotics development and deployment.
 |------------|------------|-------------|------------|
 | [ros2_humble](https://github.com/ycpss91255-docker/ros2_humble) | `ros:humble-ros-base` | x86_64 + ARM | Humble |
 | [osrf_ros2_humble](https://github.com/ycpss91255-docker/osrf_ros2_humble) | `osrf/ros:humble-desktop-full` | x86_64 only | Humble |
+
+### 🤖 AI Agent — Development Containers
+
+| Repository | AI Tool | Description |
+|------------|---------|-------------|
+| [ai_agent](https://github.com/ycpss91255-docker/ai_agent) | All-in-one | DinD container with Claude Code + Gemini CLI + Codex CLI |
+| [claude_code](https://github.com/ycpss91255-docker/claude_code) | Claude Code | DinD container with Anthropic Claude Code |
+| [gemini_cli](https://github.com/ycpss91255-docker/gemini_cli) | Gemini CLI | DinD container with Google Gemini CLI |
+| [codex_cli](https://github.com/ycpss91255-docker/codex_cli) | Codex CLI | DinD container with OpenAI Codex CLI |
 
 ### 🚀 Application — Deployment Containers
 
