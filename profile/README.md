@@ -47,6 +47,11 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 |------------|-------------|
 | [ros1_bridge](https://github.com/ycpss91255-docker/ros1_bridge) | ROS 1/2 bridge container (Noetic + Foxy) |
 | [urg_node_humble](https://github.com/ycpss91255-docker/urg_node_humble) | Containerized Hokuyo URG LiDAR driver for ROS 2 Humble |
+| [urg_node_noetic](https://github.com/ycpss91255-docker/urg_node_noetic) | Containerized Hokuyo URG LiDAR driver for ROS 1 Noetic |
+| [realsense_humble](https://github.com/ycpss91255-docker/realsense_humble) | Containerized Intel RealSense driver for ROS 2 Humble |
+| [realsense_noetic](https://github.com/ycpss91255-docker/realsense_noetic) | Containerized Intel RealSense driver for ROS 1 Noetic |
+| [sick_humble](https://github.com/ycpss91255-docker/sick_humble) | Containerized SICK Safety Scanner driver for ROS 2 Humble |
+| [sick_noetic](https://github.com/ycpss91255-docker/sick_noetic) | Containerized SICK Safety Scanner driver for ROS 1 Noetic |
 
 ---
 
