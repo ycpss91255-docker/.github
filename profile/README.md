@@ -46,7 +46,7 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 | Repository | Description |
 |------------|-------------|
 | [ros1_bridge](https://github.com/ycpss91255-docker/ros1_bridge) | ROS 1/2 bridge container (Noetic + Foxy) |
-| [urg_node2](https://github.com/ycpss91255-docker/urg_node2) | Containerized Hokuyo URG LiDAR driver for ROS 2 Humble |
+| [urg_node_humble](https://github.com/ycpss91255-docker/urg_node_humble) | Containerized Hokuyo URG LiDAR driver for ROS 2 Humble |
 
 ---
 
