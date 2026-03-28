@@ -8,13 +8,17 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 
 ## Repository Index
 
-### 🔧 Tool
+<details>
+<summary><strong>🔧 Tool</strong></summary>
 
 | Repository | Description |
 |------------|-------------|
 | [docker_template](https://github.com/ycpss91255-docker/docker_template) | Shared template — scripts, tests, CI workflows for all Docker container repos |
 
-### 🖥 Environment — Development Containers
+</details>
+
+<details>
+<summary><strong>🖥 Environment — Development Containers</strong></summary>
 
 #### ROS 1
 
@@ -32,7 +36,10 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 | [ros2_humble](https://github.com/ycpss91255-docker/ros2_humble) | `ros:humble-ros-base` | x86_64 + ARM | Humble |
 | [osrf_ros2_humble](https://github.com/ycpss91255-docker/osrf_ros2_humble) | `osrf/ros:humble-desktop-full` | x86_64 only | Humble |
 
-### 🤖 AI Agent — Development Containers
+</details>
+
+<details>
+<summary><strong>🤖 AI Agent — Development Containers</strong></summary>
 
 | Repository | AI Tool | Description |
 |------------|---------|-------------|
@@ -41,7 +48,10 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 | [gemini_cli](https://github.com/ycpss91255-docker/gemini_cli) | Gemini CLI | DinD container with Google Gemini CLI |
 | [codex_cli](https://github.com/ycpss91255-docker/codex_cli) | Codex CLI | DinD container with OpenAI Codex CLI |
 
-### 🚀 Application — Deployment Containers
+</details>
+
+<details>
+<summary><strong>🚀 Application — Deployment Containers</strong></summary>
 
 | Repository | Description |
 |------------|-------------|
@@ -52,6 +62,8 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 | [realsense_noetic](https://github.com/ycpss91255-docker/realsense_noetic) | Containerized Intel RealSense driver for ROS 1 Noetic |
 | [sick_humble](https://github.com/ycpss91255-docker/sick_humble) | Containerized SICK Safety Scanner driver for ROS 2 Humble |
 | [sick_noetic](https://github.com/ycpss91255-docker/sick_noetic) | Containerized SICK Safety Scanner driver for ROS 1 Noetic |
+
+</details>
 
 ---
 
