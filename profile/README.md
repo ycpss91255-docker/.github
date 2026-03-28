@@ -9,13 +9,13 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 ## Repository Index
 
 <details>
-<summary><strong>Click to expand full repository list</strong></summary>
-
-### 🔧 Tool
+<summary><strong>🔧 Tool</strong></summary>
 
 | Repository | Description |
 |------------|-------------|
 | [docker_template](https://github.com/ycpss91255-docker/docker_template) | Shared template — scripts, tests, CI workflows for all Docker container repos |
+
+</details>
 
 ### 🖥 Environment — Development Containers
 
@@ -55,8 +55,6 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 | [realsense_noetic](https://github.com/ycpss91255-docker/realsense_noetic) | Containerized Intel RealSense driver for ROS 1 Noetic |
 | [sick_humble](https://github.com/ycpss91255-docker/sick_humble) | Containerized SICK Safety Scanner driver for ROS 2 Humble |
 | [sick_noetic](https://github.com/ycpss91255-docker/sick_noetic) | Containerized SICK Safety Scanner driver for ROS 1 Noetic |
-
-</details>
 
 ---
 
