@@ -12,7 +12,7 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 
 | Repository | Description |
 |------------|-------------|
-| [docker_setup_helper](https://github.com/ycpss91255-docker/docker_setup_helper) | Modular Bash toolkit — auto-detect system params & generate `.env` for Docker builds |
+| [docker_template](https://github.com/ycpss91255-docker/docker_template) | Shared template — scripts, tests, CI workflows for all Docker container repos |
 
 ### 🖥 Environment — Development Containers
 
