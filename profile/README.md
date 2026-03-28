@@ -9,16 +9,15 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 ## Repository Index
 
 <details>
-<summary><strong>🔧 Tool</strong></summary>
+<summary><strong>Click to expand full repository list</strong></summary>
+
+### 🔧 Tool
 
 | Repository | Description |
 |------------|-------------|
 | [docker_template](https://github.com/ycpss91255-docker/docker_template) | Shared template — scripts, tests, CI workflows for all Docker container repos |
 
-</details>
-
-<details>
-<summary><strong>🖥 Environment — Development Containers</strong></summary>
+### 🖥 Environment — Development Containers
 
 #### ROS 1
 
@@ -36,10 +35,7 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 | [ros2_humble](https://github.com/ycpss91255-docker/ros2_humble) | `ros:humble-ros-base` | x86_64 + ARM | Humble |
 | [osrf_ros2_humble](https://github.com/ycpss91255-docker/osrf_ros2_humble) | `osrf/ros:humble-desktop-full` | x86_64 only | Humble |
 
-</details>
-
-<details>
-<summary><strong>🤖 AI Agent — Development Containers</strong></summary>
+### 🤖 AI Agent — Development Containers
 
 | Repository | AI Tool | Description |
 |------------|---------|-------------|
@@ -48,10 +44,7 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 | [gemini_cli](https://github.com/ycpss91255-docker/gemini_cli) | Gemini CLI | DinD container with Google Gemini CLI |
 | [codex_cli](https://github.com/ycpss91255-docker/codex_cli) | Codex CLI | DinD container with OpenAI Codex CLI |
 
-</details>
-
-<details>
-<summary><strong>🚀 Application — Deployment Containers</strong></summary>
+### 🚀 Application — Deployment Containers
 
 | Repository | Description |
 |------------|-------------|
