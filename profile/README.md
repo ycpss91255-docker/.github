@@ -6,18 +6,31 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 
 ---
 
+### Quick Start (any environment repo)
+
+```bash
+./build.sh && ./run.sh
+```
+
+### How to choose?
+
+- **`ros` vs `osrf_ros`**: `ros` supports ARM/RPi, `osrf_ros` is x86-only but includes desktop-full (RViz, Gazebo)
+- **ROS 1 vs ROS 2**: Choose based on your project's ROS version
+- **`ros-base` vs `desktop-full`**: Use `ros-base` for headless/embedded, `desktop-full` for GUI development
+
+### Filter by topic
+
+Use GitHub topic filters to browse repos by category:
+[`environment`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:environment) ·
+[`application`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:application) ·
+[`tool`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:tool)
+
+---
+
 ## Repository Index
 
 <details>
-<summary><strong>🔧 Tool</strong></summary>
-
-| Repository | Description |
-|------------|-------------|
-| [docker_template](https://github.com/ycpss91255-docker/docker_template) | Shared template — scripts, tests, CI workflows for all Docker container repos |
-
-</details>
-
-### 🖥 Environment — Development Containers
+<summary><strong>🖥 Environment — Development Containers</strong></summary>
 
 #### ROS 1
 
@@ -35,7 +48,10 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 | [ros2_humble](https://github.com/ycpss91255-docker/ros2_humble) | `ros:humble-ros-base` | x86_64 + ARM | Humble |
 | [osrf_ros2_humble](https://github.com/ycpss91255-docker/osrf_ros2_humble) | `osrf/ros:humble-desktop-full` | x86_64 only | Humble |
 
-### 🤖 AI Agent — Development Containers
+</details>
+
+<details>
+<summary><strong>🤖 AI Agent — Development Containers</strong></summary>
 
 | Repository | AI Tool | Description |
 |------------|---------|-------------|
@@ -44,7 +60,10 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 | [gemini_cli](https://github.com/ycpss91255-docker/gemini_cli) | Gemini CLI | DinD container with Google Gemini CLI |
 | [codex_cli](https://github.com/ycpss91255-docker/codex_cli) | Codex CLI | DinD container with OpenAI Codex CLI |
 
-### 🚀 Application — Deployment Containers
+</details>
+
+<details>
+<summary><strong>🚀 Application — Deployment Containers</strong></summary>
 
 | Repository | Description |
 |------------|-------------|
@@ -56,23 +75,13 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 | [sick_humble](https://github.com/ycpss91255-docker/sick_humble) | Containerized SICK Safety Scanner driver for ROS 2 Humble |
 | [sick_noetic](https://github.com/ycpss91255-docker/sick_noetic) | Containerized SICK Safety Scanner driver for ROS 1 Noetic |
 
----
+</details>
 
-### How to choose?
+<details>
+<summary><strong>🔧 Tool</strong></summary>
 
-- **`ros` vs `osrf_ros`**: `ros` supports ARM/RPi, `osrf_ros` is x86-only but includes desktop-full (RViz, Gazebo)
-- **ROS 1 vs ROS 2**: Choose based on your project's ROS version
-- **`ros-base` vs `desktop-full`**: Use `ros-base` for headless/embedded, `desktop-full` for GUI development
+| Repository | Description |
+|------------|-------------|
+| [docker_template](https://github.com/ycpss91255-docker/docker_template) | Shared template — scripts, tests, CI workflows for all Docker container repos |
 
-### Quick Start (any environment repo)
-
-```bash
-./build.sh && ./run.sh
-```
-
-### Filter by topic
-
-Use GitHub topic filters to browse repos by category:
-[`environment`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:environment) ·
-[`application`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:application) ·
-[`tool`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:tool)
+</details>
