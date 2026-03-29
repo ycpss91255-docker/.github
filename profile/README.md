@@ -30,7 +30,7 @@ Use GitHub topic filters to browse repos by category:
 ## Repository Index
 
 <details>
-<summary><strong>🖥 Environment — Development Containers</strong></summary>
+<summary><strong>Environment — Development Containers</strong></summary>
 
 | Repository | Base Image | Architecture | ROS Distro |
 |------------|------------|-------------|------------|
@@ -44,7 +44,7 @@ Use GitHub topic filters to browse repos by category:
 </details>
 
 <details>
-<summary><strong>🤖 AI Agent — Development Containers</strong></summary>
+<summary><strong>AI Agent — Development Containers</strong></summary>
 
 | Repository | AI Tool | Description |
 |------------|---------|-------------|
@@ -56,7 +56,7 @@ Use GitHub topic filters to browse repos by category:
 </details>
 
 <details>
-<summary><strong>🚀 Application — Deployment Containers</strong></summary>
+<summary><strong>Application — Deployment Containers</strong></summary>
 
 | Repository | Description |
 |------------|-------------|
@@ -71,7 +71,7 @@ Use GitHub topic filters to browse repos by category:
 </details>
 
 <details>
-<summary><strong>🔧 Tool</strong></summary>
+<summary><strong>Tool</strong></summary>
 
 | Repository | Description |
 |------------|-------------|
