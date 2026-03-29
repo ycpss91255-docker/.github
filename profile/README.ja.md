@@ -30,7 +30,7 @@ GitHub トピックフィルタでカテゴリ別に閲覧：
 ## リポジトリ一覧
 
 <details>
-<summary><strong>🖥 環境 — 開発コンテナ</strong></summary>
+<summary><strong>環境 — 開発コンテナ</strong></summary>
 
 | リポジトリ | ベースイメージ | アーキテクチャ | ROS ディストリビューション |
 |-----------|--------------|--------------|------------------------|
@@ -44,7 +44,7 @@ GitHub トピックフィルタでカテゴリ別に閲覧：
 </details>
 
 <details>
-<summary><strong>🤖 AI Agent — 開発コンテナ</strong></summary>
+<summary><strong>AI Agent — 開発コンテナ</strong></summary>
 
 | リポジトリ | AI ツール | 説明 |
 |-----------|----------|------|
@@ -56,7 +56,7 @@ GitHub トピックフィルタでカテゴリ別に閲覧：
 </details>
 
 <details>
-<summary><strong>🚀 アプリケーション — デプロイコンテナ</strong></summary>
+<summary><strong>アプリケーション — デプロイコンテナ</strong></summary>
 
 | リポジトリ | 説明 |
 |-----------|------|
@@ -71,7 +71,7 @@ GitHub トピックフィルタでカテゴリ別に閲覧：
 </details>
 
 <details>
-<summary><strong>🔧 ツール</strong></summary>
+<summary><strong>ツール</strong></summary>
 
 | リポジトリ | 説明 |
 |-----------|------|
