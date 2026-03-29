@@ -32,20 +32,13 @@ GitHub トピックフィルタでカテゴリ別に閲覧：
 <details>
 <summary><strong>🖥 環境 — 開発コンテナ</strong></summary>
 
-#### ROS 1
-
 | リポジトリ | ベースイメージ | アーキテクチャ | ROS ディストリビューション |
 |-----------|--------------|--------------|------------------------|
 | [ros_noetic](https://github.com/ycpss91255-docker/ros_noetic) | `ros:noetic-ros-base` | x86_64 + ARM | Noetic |
 | [ros_kinetic](https://github.com/ycpss91255-docker/ros_kinetic) | `ros:kinetic-ros-base` | x86_64 + ARM | Kinetic |
+| [ros2_humble](https://github.com/ycpss91255-docker/ros2_humble) | `ros:humble-ros-base` | x86_64 + ARM | Humble |
 | [osrf_ros_noetic](https://github.com/ycpss91255-docker/osrf_ros_noetic) | `osrf/ros:noetic-desktop-full` | x86_64 のみ | Noetic |
 | [osrf_ros_kinetic](https://github.com/ycpss91255-docker/osrf_ros_kinetic) | `osrf/ros:kinetic-desktop-full` | x86_64 のみ | Kinetic |
-
-#### ROS 2
-
-| リポジトリ | ベースイメージ | アーキテクチャ | ROS ディストリビューション |
-|-----------|--------------|--------------|------------------------|
-| [ros2_humble](https://github.com/ycpss91255-docker/ros2_humble) | `ros:humble-ros-base` | x86_64 + ARM | Humble |
 | [osrf_ros2_humble](https://github.com/ycpss91255-docker/osrf_ros2_humble) | `osrf/ros:humble-desktop-full` | x86_64 のみ | Humble |
 
 </details>
