@@ -1,0 +1,3 @@
+# Claude Code session state when launched inside this sub-repo.
+# Workspace-level Claude config lives in ycpss91255-docker/claude-workspace.
+.claude/
