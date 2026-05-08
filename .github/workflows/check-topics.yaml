@@ -1,0 +1,57 @@
+name: check-topics
+
+# Two responsibilities, gated on different triggers:
+#
+#   lint  — always runs (PR + push + schedule + dispatch). ShellChecks the
+#           sync script and validates topics.yaml structure (every topic in
+#           repos.* must appear in allowed.*).
+#   drift — only on schedule + workflow_dispatch. Compares live GitHub
+#           topics against topics.yaml; fails if they diverge. NOT run on
+#           PR / push because a yaml-edit PR intentionally diverges from
+#           live until `script/sync-topics.sh --apply` is run post-merge.
+#
+# The cron catches out-of-band edits made directly on github.com.
+
+on:
+  pull_request:
+    paths:
+      - "topics.yaml"
+      - "script/sync-topics.sh"
+      - ".github/workflows/check-topics.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "topics.yaml"
+      - "script/sync-topics.sh"
+      - ".github/workflows/check-topics.yaml"
+  schedule:
+    # 09:00 Asia/Taipei (= 01:00 UTC) every Monday.
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck
+        run: shellcheck script/sync-topics.sh
+      - name: Install PyYAML
+        run: python3 -m pip install --user pyyaml
+      - name: Validate topics.yaml structure
+        run: script/sync-topics.sh --validate
+
+  drift:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PyYAML
+        run: python3 -m pip install --user pyyaml
+      - name: Dry-run sync (fails on drift)
+        run: script/sync-topics.sh --dry-run

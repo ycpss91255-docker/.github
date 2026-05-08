@@ -1,0 +1,138 @@
+# ycpss91255-docker org topic taxonomy.
+#
+# Single source of truth for GitHub repository topics across the org.
+# Sync to GitHub via `script/sync-topics.sh --apply`; CI runs the same
+# script with --dry-run on every PR and fails on drift.
+#
+# Edit this file, get review, merge, then run sync. Never edit topics
+# directly on GitHub — they will be reverted on the next sync.
+
+# ---------------------------------------------------------------------
+# Allowed topics (controlled vocabulary).
+#
+# Anything in `repos.<name>` below MUST appear in one of these lists.
+# `sync-topics.sh` rejects unknown topics. To add a new topic, add it
+# here first with a one-line description so reviewers know its scope.
+# ---------------------------------------------------------------------
+allowed:
+  # Tier 1 — category. Each active repo has exactly one. Drives the
+  # org landing-page filter links. Archived repos drop their category
+  # and gain `archived` instead (see status group).
+  category:
+    environment: "Base ROS / simulation development environment containers"
+    application: "End-user driver, sensor, or app containers"
+    agent:       "AI tool development containers (Claude / Gemini / Codex)"
+    tool:        "Shared tooling — template, multi-container launchers"
+    meta:        "Org-internal repos (monorepo, .github profile)"
+
+  # Tier 2 — ROS family + distro. Apply where relevant.
+  ros_family:
+    ros1: "ROS 1 family"
+    ros2: "ROS 2 family"
+  ros_distro:
+    noetic:  "ROS 1 Noetic"
+    kinetic: "ROS 1 Kinetic"
+    humble:  "ROS 2 Humble"
+    jazzy:   "ROS 2 Jazzy"
+    iron:    "ROS 2 Iron"
+    foxy:    "ROS 2 Foxy"
+
+  # Tier 3 — domain / feature.
+  hardware_type:
+    lidar:  "LiDAR sensor"
+    camera: "RGB / depth camera"
+    sensor: "Generic sensor (when no narrower type fits)"
+  hardware_vendor:
+    hokuyo:    "Hokuyo Automatic"
+    sick:      "SICK AG"
+    realsense: "Intel RealSense product line"
+    intel:     "Intel hardware (broader than realsense)"
+    nvidia:    "NVIDIA hardware / NGC images"
+  arch:
+    arm64:  "Repo explicitly supports arm64 builds"
+    jetson: "Repo tested on NVIDIA Jetson"
+  ai_tool:
+    claude: "Anthropic Claude Code"
+    gemini: "Google Gemini CLI"
+    codex:  "OpenAI Codex CLI"
+  domain:
+    simulator:    "Robot / physics simulator"
+    isaac-sim:    "NVIDIA Isaac Sim specifically"
+    segmentation: "Image / mask segmentation"
+    ml:           "Machine learning workload"
+    python:       "Primarily Python codebase"
+    monorepo:        "Monorepo / multi-repo container"
+    template:        "Template / scaffold repository"
+    bash:            "Primarily Bash codebase"
+    multi-container: "Orchestrates / launches multiple containers"
+
+  # Tier 4 — generic / status.
+  generic:
+    docker: "Containerized via Docker (apply to every repo)"
+  status:
+    archived:   "Archived; superseded by another repo"
+    deprecated: "Soft-deprecated; still works but discouraged"
+
+# ---------------------------------------------------------------------
+# Per-repo target topic list.
+#
+# Order within each list is preserved when synced to GitHub. Keep it
+# stable so PR diffs stay clean (category first, then family, distro,
+# domain, generic).
+# ---------------------------------------------------------------------
+repos:
+  # --- environment ---
+  ros_distro:
+    [environment, docker, ros1, noetic, kinetic, arm64]
+  ros2_distro:
+    [environment, docker, ros2, humble, jazzy, iron, arm64]
+  isaac:
+    [environment, docker, ros2, humble, simulator, isaac-sim, nvidia]
+
+  # --- application ---
+  ros1_bridge:
+    [application, docker, ros1, ros2, noetic, humble, jazzy, arm64, jetson]
+  urg_node_noetic:
+    [application, docker, ros1, noetic, lidar, hokuyo]
+  urg_node_humble:
+    [application, docker, ros2, humble, lidar, hokuyo]
+  sick_noetic:
+    [application, docker, ros1, noetic, lidar, sick]
+  sick_humble:
+    [application, docker, ros2, humble, lidar, sick]
+  realsense_noetic:
+    [application, docker, ros1, noetic, camera, realsense, intel]
+  realsense_humble:
+    [application, docker, ros2, humble, camera, realsense, intel]
+  seggpt:
+    [application, docker, python, ml, segmentation]
+
+  # --- agent ---
+  ai_agent:
+    [agent, docker, claude, gemini, codex]
+  claude_code:
+    [agent, docker, claude]
+  gemini_cli:
+    [agent, docker, gemini]
+  codex_cli:
+    [agent, docker, codex]
+
+  # --- tool ---
+  template:
+    [tool, docker, template, bash]
+  multi_run:
+    [tool, docker, bash, multi-container]
+
+  # --- meta ---
+  docker_harness:
+    [meta, docker, monorepo]
+  .github:
+    [meta]
+
+  # --- archived (no category, status only) ---
+  ros_noetic:       [docker, ros1, noetic, archived]
+  ros_kinetic:      [docker, ros1, kinetic, archived]
+  ros2_humble:      [docker, ros2, humble, archived]
+  osrf_ros_noetic:  [docker, ros1, noetic, archived]
+  osrf_ros_kinetic: [docker, ros1, kinetic, archived]
+  osrf_ros2_humble: [docker, ros2, humble, archived]
