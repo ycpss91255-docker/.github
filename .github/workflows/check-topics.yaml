@@ -31,6 +31,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   lint:
@@ -45,7 +46,7 @@ jobs:
         run: script/sync-topics.sh --validate
 
   drift:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -55,3 +56,77 @@ jobs:
         run: python3 -m pip install --user pyyaml
       - name: Dry-run sync (fails on drift)
         run: script/sync-topics.sh --dry-run
+
+      # On the weekly schedule, surface drift via an auto-opened issue
+      # rather than email — the maintainer disabled GitHub Actions
+      # email notifications. Deduped: skip if an open issue already
+      # exists with the topics-drift label. The label is created on
+      # the fly the first time so the workflow is self-contained.
+      - name: Open issue on cron drift (deduped)
+        if: failure() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const label = 'topics-drift';
+
+            try {
+              await github.rest.issues.getLabel({owner, repo, name: label});
+            } catch (e) {
+              if (e.status !== 404) throw e;
+              await github.rest.issues.createLabel({
+                owner, repo, name: label, color: 'd93f0b',
+                description: 'Weekly topics.yaml drift cron found a mismatch.'
+              });
+            }
+
+            const existing = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: label
+            });
+            if (existing.data.length > 0) {
+              core.notice(
+                `Drift issue #${existing.data[0].number} already open; skipping create.`
+              );
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner, repo,
+              title: 'Topics drift detected — weekly cron',
+              labels: [label],
+              body: [
+                'The Monday cron run found drift between `topics.yaml` and live GitHub topics.',
+                '',
+                `Run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+                '',
+                '## Fix',
+                '',
+                '1. Locally: `script/sync-topics.sh --dry-run` to see the diff.',
+                '2. If yaml needs an entry update, open a PR editing `topics.yaml`.',
+                '3. After merge: `script/sync-topics.sh --apply` from a `.github` checkout.',
+                '4. This issue auto-closes on the next clean cron run.'
+              ].join('\n')
+            });
+
+      # Inverse of the previous step: when a scheduled run goes green,
+      # close any lingering drift issue so it does not look stale.
+      - name: Close drift issue on cron success
+        if: success() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const open = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: 'topics-drift'
+            });
+            for (const issue of open.data) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issue.number,
+                body: `Closing — cron run \`${context.runId}\` detected no drift.`
+              });
+              await github.rest.issues.update({
+                owner, repo, issue_number: issue.number, state: 'closed'
+              });
+            }
