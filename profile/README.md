@@ -14,15 +14,17 @@ Docker containerized environments for ROS robotics development, AI agent tools, 
 
 ### How to choose?
 
-- **`ros` vs `osrf_ros`**: `ros` supports ARM/RPi, `osrf_ros` is x86-only but includes desktop-full (RViz, Gazebo)
-- **ROS 1 vs ROS 2**: Choose based on your project's ROS version
-- **`ros-base` vs `desktop-full`**: Use `ros-base` for headless/embedded, `desktop-full` for GUI development
+Two environment repos cover ROS 1 and ROS 2; pick a `BASE_IMAGE` variant to choose the distro and image flavour:
+
+- **ROS 1 vs ROS 2** → `ros_distro` (Noetic, Kinetic) vs `ros2_distro` (Humble, Jazzy, Iron)
+- **`ros:` vs `osrf/ros:` variant** → `ros:` is multi-arch (x86_64 + ARM) ros-base; `osrf/ros:` is x86_64-only desktop-full (RViz, Gazebo)
 
 ### Filter by topic
 
 Use GitHub topic filters to browse repos by category:
 [`environment`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:environment) ·
 [`application`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:application) ·
+[`agent`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:agent) ·
 [`tool`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:tool)
 
 ---
@@ -32,14 +34,14 @@ Use GitHub topic filters to browse repos by category:
 <details>
 <summary><strong>Environment — Development Containers</strong></summary>
 
-| Repository | Base Image | Architecture | ROS Distro |
-|------------|------------|-------------|------------|
-| [ros_noetic](https://github.com/ycpss91255-docker/ros_noetic) | `ros:noetic-ros-base` | x86_64 + ARM | Noetic |
-| [ros_kinetic](https://github.com/ycpss91255-docker/ros_kinetic) | `ros:kinetic-ros-base` | x86_64 + ARM | Kinetic |
-| [ros2_humble](https://github.com/ycpss91255-docker/ros2_humble) | `ros:humble-ros-base` | x86_64 + ARM | Humble |
-| [osrf_ros_noetic](https://github.com/ycpss91255-docker/osrf_ros_noetic) | `osrf/ros:noetic-desktop-full` | x86_64 only | Noetic |
-| [osrf_ros_kinetic](https://github.com/ycpss91255-docker/osrf_ros_kinetic) | `osrf/ros:kinetic-desktop-full` | x86_64 only | Kinetic |
-| [osrf_ros2_humble](https://github.com/ycpss91255-docker/osrf_ros2_humble) | `osrf/ros:humble-desktop-full` | x86_64 only | Humble |
+Each repo is a single Dockerfile that switches distro and base image flavour via the `BASE_IMAGE` build arg.
+
+| Repository | ROS | Distros | Variants |
+|------------|-----|---------|----------|
+| [ros_distro](https://github.com/ycpss91255-docker/ros_distro) | ROS 1 | Noetic, Kinetic | `ros:*-ros-base` (x86_64 + ARM), `osrf/ros:*-desktop-full` (x86_64) |
+| [ros2_distro](https://github.com/ycpss91255-docker/ros2_distro) | ROS 2 | Humble, Jazzy, Iron | `ros:*-ros-base` (x86_64 + ARM), `osrf/ros:*-desktop-full` (x86_64) |
+
+> Earlier per-distro repos (`ros_noetic`, `ros_kinetic`, `ros2_humble`, `osrf_ros_noetic`, `osrf_ros_kinetic`, `osrf_ros2_humble`) are archived; see the [`archived`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:archived) topic.
 
 </details>
 
@@ -60,7 +62,7 @@ Use GitHub topic filters to browse repos by category:
 
 | Repository | Description |
 |------------|-------------|
-| [ros1_bridge](https://github.com/ycpss91255-docker/ros1_bridge) | ROS 1/2 bridge container (Noetic + Foxy) |
+| [ros1_bridge](https://github.com/ycpss91255-docker/ros1_bridge) | ROS 1 (Noetic) ↔ ROS 2 (Humble + Jazzy) bridge; multi-arch (amd64 + arm64/Jetson) |
 | [urg_node_humble](https://github.com/ycpss91255-docker/urg_node_humble) | Containerized Hokuyo URG LiDAR driver for ROS 2 Humble |
 | [urg_node_noetic](https://github.com/ycpss91255-docker/urg_node_noetic) | Containerized Hokuyo URG LiDAR driver for ROS 1 Noetic |
 | [realsense_humble](https://github.com/ycpss91255-docker/realsense_humble) | Containerized Intel RealSense driver for ROS 2 Humble |
