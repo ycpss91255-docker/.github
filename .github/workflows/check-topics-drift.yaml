@@ -1,0 +1,47 @@
+name: check-topics-drift
+
+# Verifies that GitHub repository topics across the org match topics.yaml.
+# Runs on every PR (gates merges) and on push to main (post-merge sanity).
+# A scheduled run catches drift introduced out-of-band on github.com.
+#
+# Adding/removing topics happens locally via `script/sync-topics.sh --apply`
+# after a yaml PR merges. This workflow only ever runs --dry-run.
+
+on:
+  pull_request:
+    paths:
+      - "topics.yaml"
+      - "script/sync-topics.sh"
+      - ".github/workflows/check-topics-drift.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "topics.yaml"
+      - "script/sync-topics.sh"
+      - ".github/workflows/check-topics-drift.yaml"
+  schedule:
+    # 09:00 Asia/Taipei (= 01:00 UTC) every Monday — weekly drift sanity.
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck
+        run: shellcheck script/sync-topics.sh
+
+  drift:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PyYAML
+        run: python3 -m pip install --user pyyaml
+      - name: Dry-run sync (fails on drift)
+        run: script/sync-topics.sh --dry-run
