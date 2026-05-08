@@ -24,14 +24,18 @@ readonly YAML_FILE="${REPO_ROOT}/topics.yaml"
 
 usage() {
   cat >&2 <<EOF
-Usage: $(basename "$0") [--dry-run | --apply] [--repo <name>]
+Usage: $(basename "$0") [--validate | --dry-run | --apply] [--repo <name>]
 
 Modes:
+  --validate  Check yaml structure only (no GitHub calls). Exits 0 if every
+              topic in repos.* appears in allowed.*, 1 otherwise. Used by
+              the lint job in CI.
   --dry-run   Print diff between yaml and live; exit 1 if drift detected.
   --apply     Apply yaml to live via gh repo edit. Implies confirmation.
 
 Filter:
-  --repo <name>   Sync only this single repo (basename, not org/repo).
+  --repo <name>   Restrict --dry-run / --apply to this single repo
+                  (basename, not org/repo). Ignored by --validate.
 
 Reads topics.yaml from the repo root. The yaml is the single source of
 truth — never edit topics directly on GitHub.
@@ -152,11 +156,12 @@ main() {
   local mode="" filter_repo=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --dry-run) mode="dry-run"; shift ;;
-      --apply)   mode="apply"; shift ;;
-      --repo)    filter_repo="$2"; shift 2 ;;
-      -h|--help) usage; exit 0 ;;
-      *)         echo "unknown arg: $1" >&2; usage; exit 2 ;;
+      --validate) mode="validate"; shift ;;
+      --dry-run)  mode="dry-run"; shift ;;
+      --apply)    mode="apply"; shift ;;
+      --repo)     filter_repo="$2"; shift 2 ;;
+      -h|--help)  usage; exit 0 ;;
+      *)          echo "unknown arg: $1" >&2; usage; exit 2 ;;
     esac
   done
   if [[ -z "${mode}" ]]; then
@@ -170,6 +175,11 @@ main() {
   fi
 
   validate_yaml
+
+  if [[ "${mode}" == "validate" ]]; then
+    echo "topics.yaml structure valid."
+    return 0
+  fi
 
   local diff_lines
   diff_lines="$(compute_diff "${filter_repo}")"
