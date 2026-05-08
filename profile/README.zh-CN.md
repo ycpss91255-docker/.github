@@ -1,5 +1,7 @@
 **[English](README.md)** | **[繁體中文](README.zh-TW.md)** | **[简体中文](README.zh-CN.md)** | **[日本語](README.ja.md)**
 
+[![CI](https://github.com/ycpss91255-docker/.github/actions/workflows/check-topics.yaml/badge.svg)](https://github.com/ycpss91255-docker/.github/actions/workflows/check-topics.yaml) [![License](https://img.shields.io/badge/License-Apache--2.0-blue?style=flat-square)](https://github.com/ycpss91255-docker/.github/blob/main/LICENSE)
+
 # ycpss91255-docker
 
 ROS 机器人开发、AI Agent 工具与应用部署的 Docker 容器化环境。
