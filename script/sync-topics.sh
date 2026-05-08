@@ -5,11 +5,13 @@
 # Reads topics.yaml at repo root, diffs each repo's actual topics
 # against the target list, and either prints the diff (--dry-run) or
 # applies it via `gh repo edit --add-topic / --remove-topic` (--apply).
+# Also compares the org repo roster vs yaml.repos: a new repo created
+# on GitHub but not added to yaml fails --dry-run on the next cron run.
 #
 # Intended runners:
 #   - Local: `script/sync-topics.sh --apply` after merging a yaml change.
-#   - CI:    `script/sync-topics.sh --dry-run` from a workflow on every
-#            PR; non-zero exit = drift, fails the check.
+#   - CI:    `script/sync-topics.sh --dry-run` from the weekly cron;
+#            non-zero exit = drift, fails the check.
 #
 # Requires: gh CLI authenticated, python3 (for yaml parse), jq.
 
@@ -93,6 +95,36 @@ live_topics() {
   local repo="$1"
   gh repo view "${ORG}/${repo}" --json repositoryTopics \
     --jq '.repositoryTopics[].name' 2>/dev/null | sort -u
+}
+
+# Compare org repo roster against yaml.repos. Catches:
+#   - new repos added on GitHub but not yet listed in yaml ("missing")
+#   - yaml entries for repos that no longer exist on GitHub ("ghost")
+# Skipped when --repo filter is active (only relevant when iterating all).
+# Prints human-readable drift; returns 1 if any drift found, 0 otherwise.
+roster_drift() {
+  local org_tmp yaml_tmp missing ghost result=0
+  org_tmp="$(mktemp)"
+  yaml_tmp="$(mktemp)"
+  gh repo list "${ORG}" --limit 200 --json name --jq '.[].name' \
+    | sort -u >"${org_tmp}"
+  parse_yaml repos | awk -F'\t' '{print $1}' | sort -u >"${yaml_tmp}"
+
+  missing="$(comm -23 "${org_tmp}" "${yaml_tmp}")"
+  ghost="$(comm -13 "${org_tmp}" "${yaml_tmp}")"
+  rm -f "${org_tmp}" "${yaml_tmp}"
+
+  if [[ -n "${missing}" ]]; then
+    echo "Repos in org but not in topics.yaml (add to repos.*):"
+    while IFS= read -r r; do echo "  + ${r}"; done <<< "${missing}"
+    result=1
+  fi
+  if [[ -n "${ghost}" ]]; then
+    echo "Repos in topics.yaml but not in org (typo or deleted?):"
+    while IFS= read -r r; do echo "  - ${r}"; done <<< "${ghost}"
+    result=1
+  fi
+  return "${result}"
 }
 
 # Diff target vs live. Emits two lines per repo when drift exists:
@@ -181,14 +213,27 @@ main() {
     return 0
   fi
 
+  # Roster drift only relevant when scanning everything; --repo focuses on
+  # one named repo and the user already knows it exists.
+  local roster_ok=0
+  if [[ -z "${filter_repo}" ]]; then
+    roster_drift || roster_ok=1
+  fi
+
   local diff_lines
   diff_lines="$(compute_diff "${filter_repo}")"
   case "${mode}" in
     dry-run)
       print_diff "${diff_lines}"
-      [[ -z "${diff_lines}" ]] || exit 1
+      if [[ "${roster_ok}" -ne 0 || -n "${diff_lines}" ]]; then
+        exit 1
+      fi
       ;;
     apply)
+      if [[ "${roster_ok}" -ne 0 ]]; then
+        echo "Refusing to apply with unresolved roster drift; fix yaml first." >&2
+        exit 1
+      fi
       apply_diff "${diff_lines}"
       ;;
   esac
