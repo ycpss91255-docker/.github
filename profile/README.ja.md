@@ -79,7 +79,7 @@ GitHub トピックフィルタでカテゴリ別に閲覧：
 
 | リポジトリ | 説明 |
 |-----------|------|
-| [template](https://github.com/ycpss91255-docker/template) | 共有テンプレート — スクリプト、テスト、CI workflows |
+| [base](https://github.com/ycpss91255-docker/base) | 共有テンプレート — スクリプト、テスト、CI workflows |
 | [multi_run](https://github.com/ycpss91255-docker/multi_run) | 複数ワークスペースの Docker コンテナを同時起動 |
 
 </details>

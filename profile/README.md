@@ -79,7 +79,7 @@ Each repo is a single Dockerfile that switches distro and base image flavour via
 
 | Repository | Description |
 |------------|-------------|
-| [template](https://github.com/ycpss91255-docker/template) | Shared template — scripts, tests, CI workflows for all Docker container repos |
+| [base](https://github.com/ycpss91255-docker/base) | Shared template — scripts, tests, CI workflows for all Docker container repos |
 | [multi_run](https://github.com/ycpss91255-docker/multi_run) | Launch multiple Docker containers from different workspaces simultaneously |
 
 </details>
