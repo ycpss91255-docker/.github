@@ -1,0 +1,88 @@
+# Reusable workflow: run a repo-provided suite on the org's self-hosted GPU
+# host, carrying the cross-cutting concerns that EVERY self-hosted GPU job in
+# this org needs. Repos keep their own bespoke build/test logic in a script and
+# pass its path via `run-script`.
+#
+# Why this is centralized -- the security invariant:
+#   The job is gated to same-repo refs, so a forked PR's code can NEVER execute
+#   on the self-hosted host -- not even an approved fork PR. The runner user is
+#   in the docker group (== root-equivalent: `docker run -v /:/host` reaches the
+#   whole host), so this gate is load-bearing, not cosmetic. See the
+#   ycpss91255-docker/github_runner security model. A contributor with their own
+#   GPU still runs the full suite in their own fork (a push in the fork
+#   dispatches onto the fork owner's runner, never this host).
+#
+# Usage (caller repo):
+#   jobs:
+#     gpu:
+#       uses: ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@main
+#       with:
+#         run-script: ./test/ci/gpu_suite.sh
+#         timeout-minutes: 30
+name: GPU self-hosted suite (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      run-script:
+        description: >-
+          Path, in the calling repo, to the script that runs the bespoke GPU
+          build/test suite. Executed after checkout from the repo root, with the
+          runner's default bash shell (-eo pipefail). GITHUB_WORKSPACE and the
+          usual GitHub env vars are available.
+        required: true
+        type: string
+      timeout-minutes:
+        description: Job timeout in minutes.
+        required: false
+        default: 30
+        type: number
+      runner-labels:
+        description: >-
+          JSON array of runner labels to target. Defaults to the self-hosted GPU
+          pool. Override only if a repo needs a different label set.
+        required: false
+        default: '["self-hosted", "gpu"]'
+        type: string
+      reclaim-workspace:
+        description: >-
+          Before checkout, chown the workspace back to the runner user so
+          actions/checkout's clean step can remove root-owned residue left by a
+          previous job's root container. Keep on for any job that runs root
+          containers bind-mounting the workspace (the common case).
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  gpu:
+    # Fork-PR safety gate: non-PR events (push / tag / workflow_dispatch) always
+    # run; PR events run ONLY when the PR head repo is this repo (a collaborator
+    # branch), never a fork. Keeps untrusted fork code off the self-hosted host
+    # even if a maintainer clicks "Approve and run".
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ fromJSON(inputs.runner-labels) }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      # Pre-checkout self-heal: a previous job's root container can leave
+      # root-owned files in the bind-mounted workspace, which makes the next
+      # actions/checkout clean step fail with EACCES on a non-root runner -- the
+      # job would die at checkout before any test runs. A throwaway root
+      # container chowns the tree back to the runner user (uid/gid resolved on
+      # the host, not inside the container), so checkout's clean step
+      # (clean: true -> git clean -ffdx) can then wipe stale and gitignored
+      # files itself. Non-destructive. GITHUB_WORKSPACE always exists by the
+      # time a step runs. See ycpss91255-docker/github_runner#77.
+      - name: Reclaim workspace ownership (clear root-owned residue)
+        if: ${{ inputs.reclaim-workspace }}
+        run: |
+          docker run --rm -v "${GITHUB_WORKSPACE}":/w busybox:1 \
+            chown -R "$(id -u):$(id -g)" /w
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run GPU suite
+        run: ${{ inputs.run-script }}
