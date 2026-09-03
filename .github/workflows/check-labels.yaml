@@ -1,0 +1,141 @@
+name: check-labels
+
+# Two responsibilities, gated on different triggers:
+#
+#   lint  — always runs (PR + push + schedule + dispatch). ShellChecks the
+#           sync script and validates labels.yaml structure (every entry
+#           needs a name, a 6-digit hex colour and a description).
+#   drift — only on schedule + workflow_dispatch. Compares the live GitHub
+#           labels of every org repo against labels.yaml; fails if they
+#           diverge. NOT run on PR / push because a yaml-edit PR
+#           intentionally diverges from live until
+#           `script/sync-labels.sh --apply` is run post-merge.
+#
+# The gate and the generator are the same script, run with --dry-run
+# instead of --apply, so they cannot disagree about what drift is.
+#
+# The cron catches out-of-band edits made directly on github.com — the
+# failure mode GitHub's org-level default labels cannot cover, since
+# those apply only at repository creation.
+
+on:
+  pull_request:
+    paths:
+      - "labels.yaml"
+      - "script/sync-labels.sh"
+      - ".github/workflows/check-labels.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "labels.yaml"
+      - "script/sync-labels.sh"
+      - ".github/workflows/check-labels.yaml"
+  schedule:
+    # 09:00 Asia/Taipei (= 01:00 UTC) every Monday.
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck
+        run: shellcheck script/sync-labels.sh
+      - name: Install PyYAML
+        run: python3 -m pip install --user pyyaml
+      - name: Validate labels.yaml structure
+        run: script/sync-labels.sh --validate
+
+  drift:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PyYAML
+        run: python3 -m pip install --user pyyaml
+      - name: Dry-run sync (fails on drift)
+        run: script/sync-labels.sh --dry-run
+
+      # On the weekly schedule, surface drift via an auto-opened issue
+      # rather than email — the maintainer disabled GitHub Actions
+      # email notifications. Deduped: skip if an open issue already
+      # exists with the labels-drift label. The label is created on
+      # the fly the first time so the workflow is self-contained.
+      # `labels-drift` is a workflow-internal label, deliberately not
+      # in labels.yaml: it lives only in this repo, so the sync leaves
+      # it alone like any other unmanaged label.
+      - name: Open issue on cron drift (deduped)
+        if: failure() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const label = 'labels-drift';
+
+            try {
+              await github.rest.issues.getLabel({owner, repo, name: label});
+            } catch (e) {
+              if (e.status !== 404) throw e;
+              await github.rest.issues.createLabel({
+                owner, repo, name: label, color: 'd93f0b',
+                description: 'Weekly labels.yaml drift cron found a mismatch.'
+              });
+            }
+
+            const existing = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: label
+            });
+            if (existing.data.length > 0) {
+              core.notice(
+                `Drift issue #${existing.data[0].number} already open; skipping create.`
+              );
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner, repo,
+              title: 'Labels drift detected — weekly cron',
+              labels: [label],
+              body: [
+                'The Monday cron run found drift between `labels.yaml` and the live GitHub labels.',
+                '',
+                `Run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+                '',
+                '## Fix',
+                '',
+                '1. Locally: `script/sync-labels.sh --dry-run` to see the diff.',
+                '2. If yaml needs an entry update, open a PR editing `labels.yaml`.',
+                '3. After merge: `script/sync-labels.sh --apply` from a `.github` checkout.',
+                '4. This issue auto-closes on the next clean cron run.'
+              ].join('\n')
+            });
+
+      # Inverse of the previous step: when a scheduled run goes green,
+      # close any lingering drift issue so it does not look stale.
+      - name: Close drift issue on cron success
+        if: success() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const open = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: 'labels-drift'
+            });
+            for (const issue of open.data) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issue.number,
+                body: `Closing — cron run \`${context.runId}\` detected no drift.`
+              });
+              await github.rest.issues.update({
+                owner, repo, issue_number: issue.number, state: 'closed'
+              });
+            }
