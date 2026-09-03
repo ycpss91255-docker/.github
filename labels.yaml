@@ -1,0 +1,63 @@
+# ycpss91255-docker org label vocabulary.
+#
+# Single source of truth for GitHub issue labels across the org.
+# Sync to GitHub via `script/sync-labels.sh --apply`; CI runs the same
+# script with --dry-run on the weekly cron and fails on drift.
+#
+# Edit this file, get review, merge, then run sync. Never edit these
+# labels directly on GitHub — they will be reverted on the next sync.
+#
+# The vocabulary is fixed by ADR-00000015 (docker_harness): five labels
+# on two orthogonal axes — kind (exactly one, required at issue create)
+# and state (at most one). This file is the distribution mechanism, not
+# the decision; change the ADR first.
+
+# ---------------------------------------------------------------------
+# Managed set — ONLY these five labels.
+#
+# `sync-labels.sh` creates a managed label where it is missing and
+# updates its description / colour where it has drifted. It never
+# deletes anything, and it never looks at a label whose name is not
+# listed here. Everything else in a repo is therefore left exactly as
+# it is, deliberately:
+#
+#   - The six never-used GitHub defaults (`duplicate`,
+#     `good first issue`, `help wanted`, `invalid`, `question`,
+#     `wontfix`) are left wherever they already exist, and are never
+#     created, edited or deleted by this tooling. Removing them means
+#     touching 24 repos and GitHub recreates its defaults for new ones
+#     anyway; ignoring them costs nothing.
+#   - `dependencies` and `github_actions` belong to Dependabot, which
+#     creates them where it is enabled. Managing them here would make
+#     the drift check demand them from every repo that does not run
+#     Dependabot, so the check would be permanently red.
+#
+# The same five strings are also set as the org-level default labels in
+# organization settings, which covers newly created repos. The two
+# sources must agree character for character — edit both together.
+# ---------------------------------------------------------------------
+labels:
+  # Axis 1 — kind. Exactly one per issue, required at issue create
+  # (hook rule 9). `enhancement` is defined by exclusion on purpose:
+  # its 336 uses are features, refactors, chores and tracking issues
+  # together, and the title prefix carries the finer distinction.
+  - name: bug
+    color: d73a4a
+    description: "A defect in shipped behaviour"
+  - name: documentation
+    color: 0075ca
+    description: "Documentation only, no behaviour change"
+  - name: enhancement
+    color: a2eeef
+    description: "Work that is neither a defect fix nor documentation"
+
+  # Axis 2 — state. At most one per issue; carrying neither means the
+  # scheduling question has not been answered yet. `ready-for-agent`
+  # asserts that four things are present in the issue: seams, the first
+  # slice, the gate, and a bound (ADR-00000015).
+  - name: backlog
+    color: "666666"
+    description: "Deliberately not scheduled"
+  - name: ready-for-agent
+    color: 0E8A16
+    description: "Spec is complete: seams, first slice, gate, bound"
