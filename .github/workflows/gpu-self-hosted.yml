@@ -12,6 +12,36 @@
 #   GPU still runs the full suite in their own fork (a push in the fork
 #   dispatches onto the fork owner's runner, never this host).
 #
+# Self-hosted runner policy (org-wide):
+#   - Runner group: the org runner group `trusted-self-hosted` holds the one
+#     shared runner, C01013328-ycpss91255-docker-org (labels self-hosted, Linux,
+#     X64, gpu). The runner is SHARED across repos, not per repo: a job from
+#     any allowed repo lands on the same host, the same docker daemon and the
+#     same workspace root. No per-repo runner is added.
+#   - Allowed repos: only base, isaac and omniverse_web_viewer -- the repos
+#     with a GPU suite. Every other org repo is denied at the group, so it
+#     cannot dispatch onto the host at all. The group allows public repos
+#     because these three are public; that is why the fork gate below and the
+#     workflow lock further down matter.
+#   - One entry point: every self-hosted job in the org MUST go through this
+#     reusable workflow, `uses:
+#     ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@main`.
+#     A repo never writes its own `runs-on: [self-hosted, ...]` job, because
+#     that job would bypass the fork gate and the workspace reclaim here.
+#   - Planned lock: the group will be restricted to this workflow
+#     (restricted_to_workflows:
+#     ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@refs/heads/main).
+#     Then only this file, as it is on main here, can reach the runner, so a
+#     fork PR that edits its own workflow cannot reach the host even if a
+#     maintainer approves the run. The lock is applied ONLY AFTER isaac,
+#     omniverse_web_viewer and base stop targeting the runner directly; turning
+#     it on earlier would strand their direct jobs in the queue.
+#   - Why fork code must never reach it: the runner user is in the docker group
+#     (root-equivalent, see above). Any job that runs on the host owns the host.
+#   The full threat model lives in ycpss91255-docker/github_runner, in
+#   SECURITY.md ("Threat model (summary)") and the README "Security model"
+#   section; this header states only the org policy and does not repeat it.
+#
 # Contract (every input below except run-script is optional, and every default
 # reproduces the behaviour this workflow had before the input existed, so a
 # caller that passes only run-script / timeout-minutes is unaffected):
