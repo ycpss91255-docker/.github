@@ -42,13 +42,103 @@
 #   SECURITY.md ("Threat model (summary)") and the README "Security model"
 #   section; this header states only the org policy and does not repeat it.
 #
-# Usage (caller repo):
+# Contract (every input below except run-script is optional, and every default
+# reproduces the behaviour this workflow had before the input existed, so a
+# caller that passes only run-script / timeout-minutes is unaffected):
+#
+#   Steps, in order:
+#     validate inputs -> reclaim workspace -> checkout (submodules) ->
+#     export script-env -> [buildx] -> [registry login] -> [prepare-script] ->
+#     run-script (step-timeout-minutes) -> [artifact upload (artifact-when)]
+#
+#   Outputs:
+#     script-outputs  JSON object of every key the run-script wrote to
+#                     $GITHUB_OUTPUT (`echo "attestation=$x" >> "$GITHUB_OUTPUT"`).
+#                     Read one key in a downstream caller job with
+#                     fromJSON(needs.<job>.outputs.script-outputs || '{}').<key>
+#                     (the `|| '{}'` keeps fromJSON from failing when the job
+#                     did not run). Keys written by prepare-script are NOT
+#                     included; write evidence from run-script.
+#
+#   Secrets:
+#     run-script-secret  Optional. Exported to prepare-script and run-script as
+#                        RUN_SCRIPT_SECRET only when it is passed and not
+#                        empty; otherwise the variable is not set at all. Pass
+#                        it with an explicit mapping:
+#                          secrets:
+#                            run-script-secret: ${{ secrets.MY_SECRET }}
+#                        `secrets: inherit` cannot fill it: a repository or org
+#                        secret name cannot contain '-', so no inherited secret
+#                        is ever named run-script-secret. No other secret
+#                        reaches the scripts: a secret is only exported when
+#                        this file names it.
+#
+#   Permissions (the caller's job decides; this file cannot change it):
+#     A called workflow can never widen the GITHUB_TOKEN permissions of the
+#     calling job, and this job declares none of its own, so the token has
+#     exactly what the caller's job (or workflow) grants. Grant the minimum:
+#       - test / e2e jobs:  permissions: {contents: read}
+#       - publish jobs:     permissions: {contents: read, packages: write}
+#     The token reaches the scripts, as GITHUB_TOKEN, only when
+#     expose-github-token is true; otherwise GITHUB_TOKEN is not set at all.
+#     The registry login uses the token without exporting it.
+#
+#   script-env:
+#     NAME=value lines exported to the scripts. Refused: any NAME that is not
+#     [A-Za-z_][A-Za-z0-9_]*, BASH_ENV, ENV, PATH, LD_PRELOAD,
+#     LD_LIBRARY_PATH, NODE_OPTIONS, any NAME starting with GITHUB_ or
+#     RUNNER_, and any line containing a CR. Each line is one variable, so a
+#     value interpolated from an untrusted source (a workflow_dispatch input,
+#     a PR title) that carries a newline becomes an extra NAME=value line of
+#     its own. Interpolate only trusted values, or validate them in the
+#     caller first.
+#
+# Usage (caller repo), minimal -- unchanged from the first version:
 #   jobs:
 #     gpu:
 #       uses: ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@main
 #       with:
 #         run-script: ./test/ci/gpu_suite.sh
 #         timeout-minutes: 30
+#
+# Usage, with evidence output, step timeout, submodules and failure upload
+# (omniverse_web_viewer Tier B shape):
+#   jobs:
+#     tier-b-visual-e2e:
+#       permissions: {contents: read}
+#       concurrency: {group: owv-tier-b-visual-e2e, cancel-in-progress: false}
+#       uses: ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@main
+#       with:
+#         prepare-script: bash script/ci/tier_b_prepare.sh
+#         run-script: bash script/ci/tier_b_visual_e2e.sh
+#         timeout-minutes: 60
+#         step-timeout-minutes: 45
+#         submodules: recursive
+#         artifact-name: tier-b-visual-e2e-evidence
+#         artifact-path: .tier-b-artifacts
+#         artifact-when: failure
+#     require-picture-evidence:
+#       needs: [tier-b-visual-e2e]
+#       env:
+#         ATTESTATION: ${{ fromJSON(needs.tier-b-visual-e2e.outputs.script-outputs || '{}').attestation }}
+#
+# Usage, publish job (isaac stream-source shape):
+#   jobs:
+#     publish:
+#       permissions: {contents: read, packages: write}
+#       concurrency: {group: isaac-publish-stream-source, cancel-in-progress: false}
+#       uses: ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@main
+#       with:
+#         run-script: bash script/ci/publish_stream_source.sh
+#         timeout-minutes: 90
+#         registry: ghcr.io
+#         setup-buildx: true
+#         script-env: |
+#           IMAGE_TAG=${{ inputs.tag }}
+#         artifact-name: producer-smoke-log-${{ inputs.tag }}
+#         artifact-path: .producer-smoke/
+#         artifact-when: failure
+#         artifact-if-no-files-found: ignore
 name: GPU self-hosted suite (reusable)
 
 on:
@@ -59,7 +149,8 @@ on:
           Path, in the calling repo, to the script that runs the bespoke GPU
           build/test suite. Executed after checkout from the repo root, with the
           runner's default bash shell (-eo pipefail). GITHUB_WORKSPACE and the
-          usual GitHub env vars are available.
+          usual GitHub env vars are available. Every key it writes to
+          $GITHUB_OUTPUT is returned in the script-outputs workflow output.
         required: true
         type: string
       timeout-minutes:
@@ -83,6 +174,121 @@ on:
         required: false
         default: true
         type: boolean
+      submodules:
+        description: >-
+          Passed to actions/checkout `submodules`: 'false' (default), 'true'
+          (top-level submodules) or 'recursive'.
+        required: false
+        default: 'false'
+        type: string
+      step-timeout-minutes:
+        description: >-
+          Step timeout, in minutes, for the run-script step only. 0 (default)
+          means no tighter bound than the job timeout. Set it below
+          timeout-minutes when an overrun must be a step FAILURE (so an
+          artifact upload with artifact-when 'failure' still runs) rather than
+          a job cancellation.
+        required: false
+        default: 0
+        type: number
+      prepare-script:
+        description: >-
+          Optional command run after checkout and before run-script, outside
+          step-timeout-minutes (setup, image builds, pulls). Same shell and env
+          as run-script. Empty (default) skips the step.
+        required: false
+        default: ''
+        type: string
+      script-env:
+        description: >-
+          Optional extra environment for prepare-script and run-script, one
+          NAME=value per line (single-line values; a line containing a CR is
+          refused). NAME must match [A-Za-z_][A-Za-z0-9_]*, must not be
+          BASH_ENV, ENV, PATH, LD_PRELOAD, LD_LIBRARY_PATH or NODE_OPTIONS, and
+          must not start with GITHUB_ or RUNNER_. Values are not passed through
+          shell source, but each line is its own variable: an interpolated
+          value with a newline in it (an untrusted workflow_dispatch input, for
+          example) adds lines of its own. Interpolate only trusted values, or
+          validate them in the caller first.
+        required: false
+        default: ''
+        type: string
+      expose-github-token:
+        description: >-
+          Export the job's GITHUB_TOKEN to prepare-script and run-script as
+          GITHUB_TOKEN. Off by default, and then GITHUB_TOKEN is not set at
+          all: on this persistent shared host a token
+          in the environment is reachable by everything the scripts start.
+          Its permissions are whatever the CALLING job grants.
+        required: false
+        default: false
+        type: boolean
+      registry:
+        description: >-
+          Optional container registry host (for example ghcr.io). When set,
+          docker/login-action logs in as github.actor with the job token before
+          prepare-script, and logs out when the job ends. Pushing needs the
+          caller job to grant `packages: write`.
+        required: false
+        default: ''
+        type: string
+      setup-buildx:
+        description: >-
+          Run docker/setup-buildx-action before prepare-script, for scripts
+          that use `docker buildx build`.
+        required: false
+        default: false
+        type: boolean
+      artifact-name:
+        description: >-
+          Optional artifact name. Empty (default) disables the upload step.
+        required: false
+        default: ''
+        type: string
+      artifact-path:
+        description: >-
+          Path(s) to upload, as actions/upload-artifact `path` (newline
+          separated). Required when artifact-name is set.
+        required: false
+        default: ''
+        type: string
+      artifact-when:
+        description: >-
+          When the upload runs: 'failure' (default; the job failed OR was
+          cancelled, so a step-timeout overrun or an outside cancel still keeps
+          the evidence), 'always', or 'success'.
+        required: false
+        default: failure
+        type: string
+      artifact-retention-days:
+        description: >-
+          Artifact retention in days. Empty (default) uses the repository
+          setting.
+        required: false
+        default: ''
+        type: string
+      artifact-if-no-files-found:
+        description: >-
+          actions/upload-artifact `if-no-files-found`: 'warn' (default),
+          'error' or 'ignore'.
+        required: false
+        default: warn
+        type: string
+    secrets:
+      run-script-secret:
+        description: >-
+          Optional secret exported to prepare-script and run-script as
+          RUN_SCRIPT_SECRET, only when passed and not empty. Pass it with an
+          explicit mapping, `run-script-secret: ${{ secrets.MY_SECRET }}`;
+          `secrets: inherit` cannot fill it, since a secret name cannot
+          contain '-'.
+        required: false
+    outputs:
+      script-outputs:
+        description: >-
+          JSON object of every key run-script wrote to $GITHUB_OUTPUT. Read a
+          key with fromJSON(needs.<job>.outputs.script-outputs || '{}').<key>.
+        value: ${{ jobs.gpu.outputs.script-outputs }}
 
 jobs:
   gpu:
@@ -95,7 +301,59 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ${{ fromJSON(inputs.runner-labels) }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
+    outputs:
+      script-outputs: ${{ toJSON(steps.suite.outputs) }}
     steps:
+      # Fail fast on a contract mistake instead of silently skipping a step
+      # (an unknown artifact-when would otherwise never upload). Inputs reach
+      # the shell through env, never through the script source.
+      - name: Validate inputs
+        env:
+          ARTIFACT_NAME: ${{ inputs.artifact-name }}
+          ARTIFACT_PATH: ${{ inputs.artifact-path }}
+          ARTIFACT_WHEN: ${{ inputs.artifact-when }}
+          ARTIFACT_RETENTION_DAYS: ${{ inputs.artifact-retention-days }}
+          ARTIFACT_IF_NO_FILES_FOUND: ${{ inputs.artifact-if-no-files-found }}
+          SUBMODULES: ${{ inputs.submodules }}
+          SCRIPT_ENV: ${{ inputs.script-env }}
+        run: |
+          err=0
+          case "${SUBMODULES}" in
+            false|true|recursive) ;;
+            *) echo "::error::submodules must be false, true or recursive (got '${SUBMODULES}')"; err=1 ;;
+          esac
+          case "${ARTIFACT_WHEN}" in
+            failure|always|success) ;;
+            *) echo "::error::artifact-when must be failure, always or success (got '${ARTIFACT_WHEN}')"; err=1 ;;
+          esac
+          case "${ARTIFACT_IF_NO_FILES_FOUND}" in
+            warn|error|ignore) ;;
+            *) echo "::error::artifact-if-no-files-found must be warn, error or ignore (got '${ARTIFACT_IF_NO_FILES_FOUND}')"; err=1 ;;
+          esac
+          if [ -n "${ARTIFACT_NAME}" ] && [ -z "${ARTIFACT_PATH}" ]; then
+            echo "::error::artifact-path is required when artifact-name is set"; err=1
+          fi
+          if [ -n "${ARTIFACT_RETENTION_DAYS}" ] && ! [[ "${ARTIFACT_RETENTION_DAYS}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::artifact-retention-days must be a positive integer (got '${ARTIFACT_RETENTION_DAYS}')"; err=1
+          fi
+          while IFS= read -r line; do
+            [ -z "${line}" ] && continue
+            name="${line%%=*}"
+            if [[ "${line}" == *$'\r'* ]]; then
+              echo "::error::script-env line contains a CR; values must be single-line"; err=1
+            elif [ "${name}" = "${line}" ] || ! [[ "${name}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+              echo "::error::script-env line is not NAME=value: '${name}'"; err=1
+            elif [[ "${name}" == GITHUB_* || "${name}" == RUNNER_* ]]; then
+              echo "::error::script-env must not set ${name} (GITHUB_* and RUNNER_* are reserved)"; err=1
+            else
+              case "${name}" in
+                BASH_ENV|ENV|PATH|LD_PRELOAD|LD_LIBRARY_PATH|NODE_OPTIONS)
+                  echo "::error::script-env must not set ${name} (it changes what the shell or loader runs)"; err=1 ;;
+              esac
+            fi
+          done <<< "${SCRIPT_ENV}"
+          exit "${err}"
+
       # Pre-checkout self-heal: a previous job's root container can leave
       # root-owned files in the bind-mounted workspace, which makes the next
       # actions/checkout clean step fail with EACCES on a non-root runner -- the
@@ -105,14 +363,99 @@ jobs:
       # (clean: true -> git clean -ffdx) can then wipe stale and gitignored
       # files itself. Non-destructive. GITHUB_WORKSPACE always exists by the
       # time a step runs. See ycpss91255-docker/github_runner#77.
+      #
+      # busybox is pinned by DIGEST (the busybox:1 multi-arch index as of
+      # 2026-11-10): it runs as root with the workspace mounted on a
+      # root-equivalent host, and a registry tag is mutable.
       - name: Reclaim workspace ownership (clear root-owned residue)
         if: ${{ inputs.reclaim-workspace }}
         run: |
-          docker run --rm -v "${GITHUB_WORKSPACE}":/w busybox:1 \
+          docker run --rm -v "${GITHUB_WORKSPACE}":/w busybox@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4 \
             chown -R "$(id -u):$(id -g)" /w
 
+      # Actions are pinned by commit SHA, not tag: a tag can be moved to any
+      # commit, and whatever it points at runs on this host.
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: ${{ inputs.submodules }}
 
+      # Validated above. Each line goes to $GITHUB_ENV as-is; the values never
+      # pass through shell source.
+      - name: Export script-env
+        if: ${{ inputs.script-env != '' }}
+        env:
+          SCRIPT_ENV: ${{ inputs.script-env }}
+        run: |
+          while IFS= read -r line; do
+            [ -z "${line}" ] && continue
+            printf '%s\n' "${line}" >> "${GITHUB_ENV}"
+          done <<< "${SCRIPT_ENV}"
+
+      - name: Set up Buildx
+        if: ${{ inputs.setup-buildx }}
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # logout (the action's default) removes the credential in the post step,
+      # so it does not outlive the job in the shared runner user's docker
+      # config.
+      - name: Log in to the registry
+        if: ${{ inputs.registry != '' }}
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+          logout: true
+
+      # Export the token and the secret only when their feature is on, so a
+      # caller that enables neither sees no GITHUB_TOKEN and no
+      # RUN_SCRIPT_SECRET at all (a step `env:` entry would set them, empty).
+      # $GITHUB_ENV reaches every later step, so this runs after the buildx and
+      # registry steps; both values stay masked in logs. The heredoc form with
+      # a random delimiter carries a multi-line secret intact.
+      - name: Export credentials
+        env:
+          EXPOSE_TOKEN: ${{ inputs.expose-github-token }}
+          TOKEN: ${{ inputs.expose-github-token && github.token || '' }}
+          SECRET: ${{ secrets.run-script-secret }}
+        run: |
+          if [ "${EXPOSE_TOKEN}" = "true" ]; then
+            printf 'GITHUB_TOKEN=%s\n' "${TOKEN}" >> "${GITHUB_ENV}"
+          fi
+          if [ -n "${SECRET}" ]; then
+            delim="RUN_SCRIPT_SECRET_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+            if [[ "${SECRET}" == *"${delim}"* ]]; then
+              echo "::error::run-script-secret contains the heredoc delimiter"; exit 1
+            fi
+            printf 'RUN_SCRIPT_SECRET<<%s\n%s\n%s\n' "${delim}" "${SECRET}" "${delim}" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Prepare
+        if: ${{ inputs.prepare-script != '' }}
+        run: ${{ inputs.prepare-script }}
+
+      # step-timeout-minutes 0 falls back to the job timeout, which always
+      # fires first (the job clock started earlier), so the default is the
+      # same single job-level bound as before the input existed.
       - name: Run GPU suite
+        id: suite
+        timeout-minutes: ${{ inputs.step-timeout-minutes > 0 && inputs.step-timeout-minutes || inputs.timeout-minutes }}
         run: ${{ inputs.run-script }}
+
+      # 'failure' includes cancelled(): a job cancelled from outside (a
+      # concurrency group, a manual cancel, the job timeout) is exactly the run
+      # whose evidence is worth keeping, and `failure()` alone is false there.
+      - name: Upload artifact
+        if: >-
+          inputs.artifact-name != '' && (
+            (inputs.artifact-when == 'always' && always()) ||
+            (inputs.artifact-when == 'failure' && (failure() || cancelled())) ||
+            (inputs.artifact-when == 'success' && success())
+          )
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
+          if-no-files-found: ${{ inputs.artifact-if-no-files-found }}
+          retention-days: ${{ inputs.artifact-retention-days }}
