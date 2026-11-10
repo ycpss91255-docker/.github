@@ -62,11 +62,16 @@
 #
 #   Secrets:
 #     run-script-secret  Optional. Exported to prepare-script and run-script as
-#                        RUN_SCRIPT_SECRET (empty when not passed). Pass it
-#                        explicitly (`secrets: {run-script-secret: ...}`) or by
-#                        `secrets: inherit` with a secret of that name. No other
-#                        inherited secret reaches the scripts: a secret is only
-#                        exported when this file names it.
+#                        RUN_SCRIPT_SECRET only when it is passed and not
+#                        empty; otherwise the variable is not set at all. Pass
+#                        it with an explicit mapping:
+#                          secrets:
+#                            run-script-secret: ${{ secrets.MY_SECRET }}
+#                        `secrets: inherit` cannot fill it: a repository or org
+#                        secret name cannot contain '-', so no inherited secret
+#                        is ever named run-script-secret. No other secret
+#                        reaches the scripts: a secret is only exported when
+#                        this file names it.
 #
 #   Permissions (the caller's job decides; this file cannot change it):
 #     A called workflow can never widen the GITHUB_TOKEN permissions of the
@@ -74,8 +79,19 @@
 #     exactly what the caller's job (or workflow) grants. Grant the minimum:
 #       - test / e2e jobs:  permissions: {contents: read}
 #       - publish jobs:     permissions: {contents: read, packages: write}
-#     The token reaches the scripts only when expose-github-token is true; the
-#     registry login uses it without exporting it.
+#     The token reaches the scripts, as GITHUB_TOKEN, only when
+#     expose-github-token is true; otherwise GITHUB_TOKEN is not set at all.
+#     The registry login uses the token without exporting it.
+#
+#   script-env:
+#     NAME=value lines exported to the scripts. Refused: any NAME that is not
+#     [A-Za-z_][A-Za-z0-9_]*, BASH_ENV, ENV, PATH, LD_PRELOAD,
+#     LD_LIBRARY_PATH, NODE_OPTIONS, any NAME starting with GITHUB_ or
+#     RUNNER_, and any line containing a CR. Each line is one variable, so a
+#     value interpolated from an untrusted source (a workflow_dispatch input,
+#     a PR title) that carries a newline becomes an extra NAME=value line of
+#     its own. Interpolate only trusted values, or validate them in the
+#     caller first.
 #
 # Usage (caller repo), minimal -- unchanged from the first version:
 #   jobs:
@@ -186,17 +202,22 @@ on:
       script-env:
         description: >-
           Optional extra environment for prepare-script and run-script, one
-          NAME=value per line (single-line values). NAME must match
-          [A-Za-z_][A-Za-z0-9_]* and must not start with GITHUB_ or RUNNER_.
-          Values travel through the environment, never through shell source,
-          so a caller can pass workflow_dispatch inputs safely.
+          NAME=value per line (single-line values; a line containing a CR is
+          refused). NAME must match [A-Za-z_][A-Za-z0-9_]*, must not be
+          BASH_ENV, ENV, PATH, LD_PRELOAD, LD_LIBRARY_PATH or NODE_OPTIONS, and
+          must not start with GITHUB_ or RUNNER_. Values are not passed through
+          shell source, but each line is its own variable: an interpolated
+          value with a newline in it (an untrusted workflow_dispatch input, for
+          example) adds lines of its own. Interpolate only trusted values, or
+          validate them in the caller first.
         required: false
         default: ''
         type: string
       expose-github-token:
         description: >-
           Export the job's GITHUB_TOKEN to prepare-script and run-script as
-          GITHUB_TOKEN. Off by default: on this persistent shared host a token
+          GITHUB_TOKEN. Off by default, and then GITHUB_TOKEN is not set at
+          all: on this persistent shared host a token
           in the environment is reachable by everything the scripts start.
           Its permissions are whatever the CALLING job grants.
         required: false
@@ -257,7 +278,10 @@ on:
       run-script-secret:
         description: >-
           Optional secret exported to prepare-script and run-script as
-          RUN_SCRIPT_SECRET.
+          RUN_SCRIPT_SECRET, only when passed and not empty. Pass it with an
+          explicit mapping, `run-script-secret: ${{ secrets.MY_SECRET }}`;
+          `secrets: inherit` cannot fill it, since a secret name cannot
+          contain '-'.
         required: false
     outputs:
       script-outputs:
@@ -315,10 +339,17 @@ jobs:
           while IFS= read -r line; do
             [ -z "${line}" ] && continue
             name="${line%%=*}"
-            if [ "${name}" = "${line}" ] || ! [[ "${name}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+            if [[ "${line}" == *$'\r'* ]]; then
+              echo "::error::script-env line contains a CR; values must be single-line"; err=1
+            elif [ "${name}" = "${line}" ] || ! [[ "${name}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
               echo "::error::script-env line is not NAME=value: '${name}'"; err=1
             elif [[ "${name}" == GITHUB_* || "${name}" == RUNNER_* ]]; then
               echo "::error::script-env must not set ${name} (GITHUB_* and RUNNER_* are reserved)"; err=1
+            else
+              case "${name}" in
+                BASH_ENV|ENV|PATH|LD_PRELOAD|LD_LIBRARY_PATH|NODE_OPTIONS)
+                  echo "::error::script-env must not set ${name} (it changes what the shell or loader runs)"; err=1 ;;
+              esac
             fi
           done <<< "${SCRIPT_ENV}"
           exit "${err}"
@@ -377,11 +408,31 @@ jobs:
           password: ${{ github.token }}
           logout: true
 
+      # Export the token and the secret only when their feature is on, so a
+      # caller that enables neither sees no GITHUB_TOKEN and no
+      # RUN_SCRIPT_SECRET at all (a step `env:` entry would set them, empty).
+      # $GITHUB_ENV reaches every later step, so this runs after the buildx and
+      # registry steps; both values stay masked in logs. The heredoc form with
+      # a random delimiter carries a multi-line secret intact.
+      - name: Export credentials
+        env:
+          EXPOSE_TOKEN: ${{ inputs.expose-github-token }}
+          TOKEN: ${{ inputs.expose-github-token && github.token || '' }}
+          SECRET: ${{ secrets.run-script-secret }}
+        run: |
+          if [ "${EXPOSE_TOKEN}" = "true" ]; then
+            printf 'GITHUB_TOKEN=%s\n' "${TOKEN}" >> "${GITHUB_ENV}"
+          fi
+          if [ -n "${SECRET}" ]; then
+            delim="RUN_SCRIPT_SECRET_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+            if [[ "${SECRET}" == *"${delim}"* ]]; then
+              echo "::error::run-script-secret contains the heredoc delimiter"; exit 1
+            fi
+            printf 'RUN_SCRIPT_SECRET<<%s\n%s\n%s\n' "${delim}" "${SECRET}" "${delim}" >> "${GITHUB_ENV}"
+          fi
+
       - name: Prepare
         if: ${{ inputs.prepare-script != '' }}
-        env:
-          GITHUB_TOKEN: ${{ inputs.expose-github-token && github.token || '' }}
-          RUN_SCRIPT_SECRET: ${{ secrets.run-script-secret }}
         run: ${{ inputs.prepare-script }}
 
       # step-timeout-minutes 0 falls back to the job timeout, which always
@@ -390,9 +441,6 @@ jobs:
       - name: Run GPU suite
         id: suite
         timeout-minutes: ${{ inputs.step-timeout-minutes > 0 && inputs.step-timeout-minutes || inputs.timeout-minutes }}
-        env:
-          GITHUB_TOKEN: ${{ inputs.expose-github-token && github.token || '' }}
-          RUN_SCRIPT_SECRET: ${{ secrets.run-script-secret }}
         run: ${{ inputs.run-script }}
 
       # 'failure' includes cancelled(): a job cancelled from outside (a
