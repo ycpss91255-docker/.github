@@ -285,7 +285,7 @@ on:
         description: >-
           Optional secret exported to prepare-script and run-script as
           RUN_SCRIPT_SECRET, only when passed and not empty. Pass it with an
-          explicit mapping, `run-script-secret: ${{ secrets.MY_SECRET }}`;
+          explicit mapping from a caller secret (see the header Usage block);
           `secrets: inherit` cannot fill it, since a secret name cannot
           contain '-'.
         required: false
