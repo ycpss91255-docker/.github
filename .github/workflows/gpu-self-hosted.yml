@@ -48,8 +48,9 @@
 #
 #   Steps, in order:
 #     validate inputs -> reclaim workspace -> checkout (submodules) ->
-#     export script-env -> [buildx] -> [registry login] -> [prepare-script] ->
-#     run-script (step-timeout-minutes) -> [artifact upload (artifact-when)]
+#     export script-env -> [buildx] -> [registry login] -> export credentials ->
+#     [prepare-script] -> run-script (step-timeout-minutes) ->
+#     [artifact upload (artifact-when)]
 #
 #   Outputs:
 #     script-outputs  JSON object of every key the run-script wrote to
@@ -84,10 +85,14 @@
 #     The registry login uses the token without exporting it.
 #
 #   script-env:
-#     NAME=value lines exported to the scripts. Refused: any NAME that is not
-#     [A-Za-z_][A-Za-z0-9_]*, BASH_ENV, ENV, PATH, LD_PRELOAD,
-#     LD_LIBRARY_PATH, NODE_OPTIONS, any NAME starting with GITHUB_ or
-#     RUNNER_, and any line containing a CR. Each line is one variable, so a
+#     NAME=value lines exported to the scripts. An allowlist, not a denylist:
+#     NAME must match ^[A-Z][A-Z0-9_]*$ (uppercase only) and must not be
+#     reserved. Reserved: every NAME starting with BASH, LD_, GITHUB_ or
+#     RUNNER_, plus SHELLOPTS, PS4, ENV, PATH, NODE_OPTIONS and
+#     RUN_SCRIPT_SECRET. Those make bash or the loader run code
+#     (SHELLOPTS=xtrace with a PS4 holding $(...) runs it before every
+#     command), or belong to the runner, or to this workflow. A line
+#     containing a CR is refused too. Each line is one variable, so a
 #     value interpolated from an untrusted source (a workflow_dispatch input,
 #     a PR title) that carries a newline becomes an extra NAME=value line of
 #     its own. Interpolate only trusted values, or validate them in the
@@ -203,12 +208,13 @@ on:
         description: >-
           Optional extra environment for prepare-script and run-script, one
           NAME=value per line (single-line values; a line containing a CR is
-          refused). NAME must match [A-Za-z_][A-Za-z0-9_]*, must not be
-          BASH_ENV, ENV, PATH, LD_PRELOAD, LD_LIBRARY_PATH or NODE_OPTIONS, and
-          must not start with GITHUB_ or RUNNER_. Values are not passed through
-          shell source, but each line is its own variable: an interpolated
-          value with a newline in it (an untrusted workflow_dispatch input, for
-          example) adds lines of its own. Interpolate only trusted values, or
+          refused). NAME must match ^[A-Z][A-Z0-9_]*$ and must not be
+          reserved: no NAME starting with BASH, LD_, GITHUB_ or RUNNER_, and
+          not SHELLOPTS, PS4, ENV, PATH, NODE_OPTIONS or RUN_SCRIPT_SECRET.
+          Values are not passed through shell source, but each line is its
+          own variable: an interpolated value with a newline in it (an
+          untrusted workflow_dispatch input, for example) adds lines of its
+          own. Interpolate only trusted values, or
           validate them in the caller first.
         required: false
         default: ''
@@ -341,14 +347,17 @@ jobs:
             name="${line%%=*}"
             if [[ "${line}" == *$'\r'* ]]; then
               echo "::error::script-env line contains a CR; values must be single-line"; err=1
-            elif [ "${name}" = "${line}" ] || ! [[ "${name}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-              echo "::error::script-env line is not NAME=value: '${name}'"; err=1
-            elif [[ "${name}" == GITHUB_* || "${name}" == RUNNER_* ]]; then
-              echo "::error::script-env must not set ${name} (GITHUB_* and RUNNER_* are reserved)"; err=1
+            elif [ "${name}" = "${line}" ] || ! [[ "${name}" =~ ^[A-Z][A-Z0-9_]*$ ]]; then
+              echo "::error::script-env line is not NAME=value with NAME matching ^[A-Z][A-Z0-9_]*\$: '${name}'"; err=1
             else
+              # Allowlist: the pattern above admits only uppercase names, and
+              # this reserved set removes the ones that make bash or the
+              # loader run code, or that the runner or this workflow owns.
               case "${name}" in
-                BASH_ENV|ENV|PATH|LD_PRELOAD|LD_LIBRARY_PATH|NODE_OPTIONS)
+                BASH*|SHELLOPTS|PS4|ENV|PATH|LD_*|NODE_OPTIONS)
                   echo "::error::script-env must not set ${name} (it changes what the shell or loader runs)"; err=1 ;;
+                GITHUB_*|RUNNER_*|RUN_SCRIPT_SECRET)
+                  echo "::error::script-env must not set ${name} (reserved for the runner and this workflow)"; err=1 ;;
               esac
             fi
           done <<< "${SCRIPT_ENV}"
