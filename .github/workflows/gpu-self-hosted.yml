@@ -373,14 +373,27 @@ jobs:
       # files itself. Non-destructive. GITHUB_WORKSPACE always exists by the
       # time a step runs. See ycpss91255-docker/github_runner#77.
       #
+      # Rootless-aware: under rootless Docker, container root IS the runner
+      # user, and the container's $(id -u) maps to a subuid on the host, so
+      # chown to $(id -u):$(id -g) hands the workspace to a uid the runner
+      # cannot touch. Use 0:0 (container root == runner user) when the daemon
+      # reports rootless; keep the current owner otherwise. The rootful
+      # daemon's SecurityOptions does not contain "rootless", so behaviour on
+      # a rootful runner is unchanged. See ycpss91255-docker/.github#38.
+      #
       # busybox is pinned by DIGEST (the busybox:1 multi-arch index as of
       # 2026-11-10): it runs as root with the workspace mounted on a
       # root-equivalent host, and a registry tag is mutable.
       - name: Reclaim workspace ownership (clear root-owned residue)
         if: ${{ inputs.reclaim-workspace }}
         run: |
+          if docker info --format '{{.SecurityOptions}}' | grep -q rootless; then
+            OWNER=0:0
+          else
+            OWNER="$(id -u):$(id -g)"
+          fi
           docker run --rm -v "${GITHUB_WORKSPACE}":/w busybox@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4 \
-            chown -R "$(id -u):$(id -g)" /w
+            chown -R "${OWNER}" /w
 
       # Actions are pinned by commit SHA, not tag: a tag can be moved to any
       # commit, and whatever it points at runs on this host.
