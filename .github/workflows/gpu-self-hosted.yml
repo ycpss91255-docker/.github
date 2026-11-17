@@ -179,6 +179,18 @@ on:
         required: false
         default: true
         type: boolean
+      reap-container-filter:
+        description: >-
+          A `docker ps --filter` expression (for example
+          `label=com.docker.compose.project=myproj-123`). When set, a final
+          step that runs even when the job is cancelled force-removes the
+          containers matching it. A cancelled job kills the runner's shell
+          without running its traps, so containers the suite started stay
+          running in the daemon. Scope the filter to this run (include the run
+          id): the daemon can be shared with other jobs. Empty (default) = off.
+        required: false
+        default: ''
+        type: string
       submodules:
         description: >-
           Passed to actions/checkout `submodules`: 'false' (default), 'true'
@@ -464,6 +476,21 @@ jobs:
         id: suite
         timeout-minutes: ${{ inputs.step-timeout-minutes > 0 && inputs.step-timeout-minutes || inputs.timeout-minutes }}
         run: ${{ inputs.run-script }}
+
+      # Runs on success, failure and cancel. A cancelled job leaves the suite's
+      # containers running in the daemon (observed on a rootless daemon, and a
+      # script `trap` does not run on cancel); this reaps them by the caller's
+      # run-scoped filter. The filter goes through env, never the script source.
+      - name: Remove run containers (cancel-safe)
+        if: ${{ always() && inputs.reap-container-filter != '' }}
+        env:
+          REAP_FILTER: ${{ inputs.reap-container-filter }}
+        run: |
+          ids="$(docker ps -aq --filter "${REAP_FILTER}")"
+          if [ -n "${ids}" ]; then
+            # shellcheck disable=SC2086
+            docker rm -f ${ids}
+          fi
 
       # 'failure' includes cancelled(): a job cancelled from outside (a
       # concurrency group, a manual cancel, the job timeout) is exactly the run
