@@ -107,16 +107,6 @@ repos:
   seggpt:
     [application, docker, python, ml, segmentation]
 
-  # --- agent ---
-  ai_agent:
-    [agent, docker, claude, gemini, codex]
-  claude_code:
-    [agent, docker, claude]
-  gemini_cli:
-    [agent, docker, gemini]
-  codex_cli:
-    [agent, docker, codex]
-
   # --- tool ---
   template:
     [tool, docker, template, bash]
@@ -157,3 +147,7 @@ repos:
   osrf_ros_kinetic: [docker, ros1, kinetic, archived]
   osrf_ros2_humble: [docker, ros2, humble, archived]
   github_runner_archived: [bash, archived]
+  ai_agent:         [docker, claude, gemini, codex, archived]
+  claude_code:      [docker, claude, archived]
+  gemini_cli:       [docker, gemini, archived]
+  codex_cli:        [docker, codex, archived]

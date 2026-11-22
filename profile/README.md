@@ -26,7 +26,6 @@ Two environment repos cover ROS 1 and ROS 2; pick a `BASE_IMAGE` variant to choo
 Use GitHub topic filters to browse repos by category:
 [`environment`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:environment) ·
 [`application`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:application) ·
-[`agent`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:agent) ·
 [`tool`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:tool)
 
 ---
@@ -44,18 +43,6 @@ Each repo is a single Dockerfile that switches distro and base image flavour via
 | [ros2_distro](https://github.com/ycpss91255-lab/ros2_distro) | ROS 2 | Humble, Jazzy, Iron | `ros:*-ros-base` (x86_64 + ARM), `osrf/ros:*-desktop-full` (x86_64) |
 
 > Earlier per-distro repos (`ros_noetic`, `ros_kinetic`, `ros2_humble`, `osrf_ros_noetic`, `osrf_ros_kinetic`, `osrf_ros2_humble`) are archived; see the [`archived`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:archived) topic.
-
-</details>
-
-<details>
-<summary><strong>AI Agent — Development Containers</strong></summary>
-
-| Repository | AI Tool | Description |
-|------------|---------|-------------|
-| [ai_agent](https://github.com/ycpss91255-lab/ai_agent) | All-in-one | DinD container with Claude Code + Gemini CLI + Codex CLI |
-| [claude_code](https://github.com/ycpss91255-lab/claude_code) | Claude Code | DinD container with Anthropic Claude Code |
-| [gemini_cli](https://github.com/ycpss91255-lab/gemini_cli) | Gemini CLI | DinD container with Google Gemini CLI |
-| [codex_cli](https://github.com/ycpss91255-lab/codex_cli) | Codex CLI | DinD container with OpenAI Codex CLI |
 
 </details>
 
@@ -91,3 +78,5 @@ Each repo is a single Dockerfile that switches distro and base image flavour via
 | [github_runner](https://github.com/ycpss91255-lab/github_runner) | Provision and manage self-hosted GitHub Actions runners |
 
 </details>
+
+> Archived AI agent repos (`ai_agent`, `claude_code`, `gemini_cli`, `codex_cli`) are no longer listed; see the [`archived`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:archived) topic.

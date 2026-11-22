@@ -26,7 +26,6 @@ ROS ロボット開発、AI Agent ツール、アプリケーションデプロ�
 GitHub トピックフィルタでカテゴリ別に閲覧：
 [`environment`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:environment) ·
 [`application`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:application) ·
-[`agent`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:agent) ·
 [`tool`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:tool)
 
 ---
@@ -44,18 +43,6 @@ GitHub トピックフィルタでカテゴリ別に閲覧：
 | [ros2_distro](https://github.com/ycpss91255-lab/ros2_distro) | ROS 2 | Humble、Jazzy、Iron | `ros:*-ros-base`（x86_64 + ARM）、`osrf/ros:*-desktop-full`（x86_64） |
 
 > 旧来の単一 distro リポジトリ（`ros_noetic`、`ros_kinetic`、`ros2_humble`、`osrf_ros_noetic`、`osrf_ros_kinetic`、`osrf_ros2_humble`）はアーカイブ済みです。[`archived`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:archived) トピックで閲覧できます。
-
-</details>
-
-<details>
-<summary><strong>AI Agent — 開発コンテナ</strong></summary>
-
-| リポジトリ | AI ツール | 説明 |
-|-----------|----------|------|
-| [ai_agent](https://github.com/ycpss91255-lab/ai_agent) | All-in-one | DinD コンテナ、Claude Code + Gemini CLI + Codex CLI 同梱 |
-| [claude_code](https://github.com/ycpss91255-lab/claude_code) | Claude Code | DinD コンテナ、Anthropic Claude Code 同梱 |
-| [gemini_cli](https://github.com/ycpss91255-lab/gemini_cli) | Gemini CLI | DinD コンテナ、Google Gemini CLI 同梱 |
-| [codex_cli](https://github.com/ycpss91255-lab/codex_cli) | Codex CLI | DinD コンテナ、OpenAI Codex CLI 同梱 |
 
 </details>
 
@@ -91,3 +78,5 @@ GitHub トピックフィルタでカテゴリ別に閲覧：
 | [github_runner](https://github.com/ycpss91255-lab/github_runner) | セルフホスト GitHub Actions runner の構築と管理 |
 
 </details>
+
+> アーカイブ済みの AI Agent リポジトリ（`ai_agent`、`claude_code`、`gemini_cli`、`codex_cli`）は一覧から除外しています。[`archived`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:archived) トピックで確認できます。

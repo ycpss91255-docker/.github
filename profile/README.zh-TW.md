@@ -26,7 +26,6 @@ ROS 機器人開發、AI Agent 工具與應用部署的 Docker 容器化環境�
 使用 GitHub 主題篩選瀏覽各類 repo：
 [`environment`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:environment) ·
 [`application`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:application) ·
-[`agent`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:agent) ·
 [`tool`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:tool)
 
 ---
@@ -44,18 +43,6 @@ ROS 機器人開發、AI Agent 工具與應用部署的 Docker 容器化環境�
 | [ros2_distro](https://github.com/ycpss91255-lab/ros2_distro) | ROS 2 | Humble、Jazzy、Iron | `ros:*-ros-base`（x86_64 + ARM）、`osrf/ros:*-desktop-full`（x86_64） |
 
 > 早期單一 distro repo（`ros_noetic`、`ros_kinetic`、`ros2_humble`、`osrf_ros_noetic`、`osrf_ros_kinetic`、`osrf_ros2_humble`）已 archived，可透過 [`archived`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:archived) 主題瀏覽。
-
-</details>
-
-<details>
-<summary><strong>AI Agent — 開發容器</strong></summary>
-
-| 倉庫 | AI 工具 | 說明 |
-|------|---------|------|
-| [ai_agent](https://github.com/ycpss91255-lab/ai_agent) | All-in-one | DinD 容器，含 Claude Code + Gemini CLI + Codex CLI |
-| [claude_code](https://github.com/ycpss91255-lab/claude_code) | Claude Code | DinD 容器，含 Anthropic Claude Code |
-| [gemini_cli](https://github.com/ycpss91255-lab/gemini_cli) | Gemini CLI | DinD 容器，含 Google Gemini CLI |
-| [codex_cli](https://github.com/ycpss91255-lab/codex_cli) | Codex CLI | DinD 容器，含 OpenAI Codex CLI |
 
 </details>
 
@@ -91,3 +78,5 @@ ROS 機器人開發、AI Agent 工具與應用部署的 Docker 容器化環境�
 | [github_runner](https://github.com/ycpss91255-lab/github_runner) | 佈建與管理自架 GitHub Actions runner |
 
 </details>
+
+> 已封存的 AI Agent repo（`ai_agent`、`claude_code`、`gemini_cli`、`codex_cli`）不再列出，可透過 [`archived`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:archived) topic 瀏覽。
