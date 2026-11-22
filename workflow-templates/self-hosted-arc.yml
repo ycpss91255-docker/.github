@@ -1,37 +1,38 @@
-# Reference template: CI on the org's self-hosted ARC runners (kubernetes container mode).
-# COPY AND ADAPT. This is a starting point, not a shared or enforced workflow:
-# nothing keeps your copy in sync with this file, and repos may diverge on purpose.
-# Policy and rationale: doc/self-hosted-runner-policy.md in this repo (issue #41).
+# 參考範本：在 org 的自架 ARC runner（kubernetes container mode）上跑 CI。
+# 請複製後自行調整。本檔只是起點，不是共用或強制的 workflow：
+# 複製出去的版本不會與本檔同步，各 repo 可以依需要分歧。
+# 政策與理由：本 repo 的 doc/self-hosted-runner-policy.md（issue #41）。
 #
-# Runner class labels (one scale set per label; the platform is ycpss91255-research/ci_cluster,
-# which owns the exact sizes and any rename -- check its doc/workflow-rules.md before relying on a size):
-#   v1-cpu-s       small CPU jobs: lint, unit tests, small builds
-#   v1-cpu-l       large CPU jobs: big builds and test suites
-#   v1-gpu-chain   GPU jobs in a CPU -> GPU chain (short GPU test that needs an artifact from a CPU job)
-#   v1-gpu-long    long-running GPU jobs
-# Use ONE class label per `runs-on` (a job must match every label listed, so two classes never match).
+# Runner 類別標籤（每個標籤對應一個 scale set）。標籤名稱與規格由同一 org 的 ci_cluster repo
+# 決定（見其 doc/workflow-rules.md）；以下是該文件提議的正式名稱，若 ci_cluster 更改，請一併更新：
+#   cpu-s         小型 CPU 工作：lint、單元測試、小型建置（先用這個）
+#   cpu-l         大型 CPU 工作：大型建置、大型測試套件（cpu-s 被 OOM 或 CPU 不足時再改用）
+#   gpu-<model>   需要 GPU 的測試，<model> 為 GPU 型號，由 ci_cluster 公告
+# arc-test-* 是 ci_cluster 的測試環境，不要用在正式工作。
+# 標籤字串請集中在 repo variable（vars.CI_CPU_S、vars.CI_CPU_L、vars.CI_GPU），類別改名時只改變數，
+# 不必改每個 workflow。Free 方案下私有 repo 讀不到 org variable，所以用 repo variable。
+# 每個 runs-on 只放一個類別標籤：工作必須符合列出的所有標籤，放兩個類別永遠不會被分配。
 #
-# Kubernetes container mode, what it means for the job:
-#   - Every job needs `container:` (an image) and uses `run:` steps. The label picks the class.
-#   - No Docker daemon: no `docker build/run/compose`, no docker.sock, no dind, no `container.options`
-#     (ignored), no Dockerfile actions (`runs.using: docker`). Build images on a hosted runner or a remote builder.
-#   - Not privileged, non-root, no sudo. Use images that run as an unprivileged user (for example
-#     nginxinc/nginx-unprivileged on port 8080, not nginx on port 80). Install tools in your image, not at run time.
-#   - Each job gets a fresh pod and workspace, so no workspace "reclaim" step is needed.
-#   - Do not set NVIDIA_VISIBLE_DEVICES or NVIDIA_DRIVER_CAPABILITIES on a job; the GPU comes from the class.
+# kubernetes container mode 對工作的影響：
+#   - 每個工作都要有 container:（映像），步驟用 run:。runs-on 標籤只決定類別。
+#   - 沒有 Docker daemon：不能 docker build/run/compose、沒有 docker.sock、不能 dind，
+#     container.options 會被忽略，也不能用 Docker 型 action（runs.using: docker）。映像請在 hosted runner 或遠端 builder 建置。
+#   - 非特權、非 root、沒有 sudo。runner 映像的 uid 是 1001，ci_cluster 的工作容器可能用其他 uid（例如 1234），
+#     不要寫死 uid。請使用以非特權使用者執行的映像（例如 nginxinc/nginx-unprivileged 用 8080 埠，而不是 nginx 的 80 埠），
+#     工具請預先裝進映像，不要在執行時安裝。
+#   - 每個工作都是新的 pod 與工作目錄，不需要「回收工作目錄」步驟。
+#   - 不要在工作上設定 NVIDIA_VISIBLE_DEVICES 或 NVIDIA_DRIVER_CAPABILITIES；GPU 由類別提供。
 #
-# SECURITY, read before editing the guard step:
-#   - `pull_request_target` and `workflow_run` must NEVER target a self-hosted label. They run with
-#     secrets and write tokens (and pull_request_target ignores the fork approval policy).
-#   - The first step of every self-hosted job (below) fails fork PRs. It is DEFENSE IN DEPTH ONLY:
-#     a fork PR runs the workflow file from the PR itself and can simply delete the step. The real gate
-#     is the org setting "Require approval for all external contributors". Do not weaken that setting.
-#   - The guard FAILS the job (`exit 1`) instead of skipping it with `if:`, because a skipped job
-#     counts as passing for required checks and would give a false green.
+# 安全性（修改 fork 防護步驟前請先讀）：
+#   - pull_request_target 與 workflow_run 絕對不可指向自架標籤：它們帶有 secrets 與寫入權杖，
+#     而且 pull_request_target 不受 fork 審核設定約束。
+#   - 每個自架工作的第一步（如下）會讓 fork PR 失敗。這只是縱深防禦：fork PR 執行的是 PR 自己的
+#     workflow 檔，可以直接刪掉這一步。真正的防線是 org 設定「Require approval for all external contributors」，不可調低。
+#   - 防護步驟以 exit 1 讓工作失敗，而不是用 if: 跳過：被跳過的工作在必要檢查中算通過，會產生假綠燈。
 #
-# Third-party actions are pinned to a full commit SHA with the version in a comment.
-# Look up a SHA with: gh api repos/<owner>/<action>/git/ref/tags/<tag>   (dereference annotated tags).
-# The org name is never hard-coded: use github.repository_owner (the org is renamed over time).
+# 第三方 action 一律釘選完整 commit SHA，並在註解寫上版本。
+# 查 SHA：gh api repos/<owner>/<action>/git/ref/tags/<tag>（annotated tag 需再解一層）。
+# 不寫死 org 名稱，一律用 github.repository_owner（org 名稱會改變）。
 
 name: CI (self-hosted ARC)
 
@@ -41,73 +42,74 @@ on:
     branches: [ $default-branch ]
   workflow_dispatch:
 
-# Least privilege; widen per job only when needed.
+# 最小權限；只在需要的工作上放寬。
 permissions:
   contents: read
 
 jobs:
-  # Small CPU class: lint and unit tests.
+  # 小型 CPU 類別：lint 與單元測試。
   lint:
-    runs-on: v1-cpu-s
+    runs-on: ${{ vars.CI_CPU_S || 'cpu-s' }}
     timeout-minutes: 15
     container:
-      # Replace with your own image; it must run as a non-root user and bring its own tools.
+      # 換成自己的映像；必須以非 root 使用者執行並自帶工具。
       image: ghcr.io/${{ github.repository_owner }}/ci-cpu:latest
     steps:
-      - name: Fork guard (defense in depth, not the real gate)
+      - name: Fork 防護（縱深防禦，不是真正的防線）
         env:
           EVENT_NAME: ${{ github.event_name }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           THIS_REPO: ${{ github.repository }}
         run: |
           if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$THIS_REPO" ]; then
-            echo "::error::Fork pull requests must not run on self-hosted runners (head: '$HEAD_REPO')."
-            echo "This job fails on purpose; it is never skipped because a skipped job counts as passing."
+            echo "::error::Fork PR 不可在自架 runner 上執行（head: '$HEAD_REPO'）。"
+            echo "本工作刻意失敗而非跳過：被跳過的工作會被當成通過。"
             exit 1
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Lint and unit test
+      - name: Lint 與單元測試
         run: |
-          echo "replace with your lint and unit test commands"
+          echo "換成自己的 lint 與單元測試指令"
 
-  # Large CPU class: heavy build, then hand the result to the GPU job as an artifact.
+  # 大型 CPU 類別：重度建置，結果以 artifact 交給 GPU 工作。
   build:
-    runs-on: v1-cpu-l
+    runs-on: ${{ vars.CI_CPU_L || 'cpu-l' }}
     timeout-minutes: 60
     container:
       image: ghcr.io/${{ github.repository_owner }}/ci-cpu:latest
     steps:
-      - name: Fork guard (defense in depth, not the real gate)
+      - name: Fork 防護（縱深防禦，不是真正的防線）
         env:
           EVENT_NAME: ${{ github.event_name }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           THIS_REPO: ${{ github.repository }}
         run: |
           if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$THIS_REPO" ]; then
-            echo "::error::Fork pull requests must not run on self-hosted runners (head: '$HEAD_REPO')."
-            echo "This job fails on purpose; it is never skipped because a skipped job counts as passing."
+            echo "::error::Fork PR 不可在自架 runner 上執行（head: '$HEAD_REPO'）。"
+            echo "本工作刻意失敗而非跳過：被跳過的工作會被當成通過。"
             exit 1
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Build
+      - name: 建置
         run: |
           mkdir -p out
-          echo "replace with your build; write results to ./out" > out/result.txt
+          echo "換成自己的建置，結果寫到 ./out" > out/result.txt
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-out
           path: out/
           retention-days: 1
 
-  # GPU class: hold the GPU only for GPU work. Compile and package on a CPU job, test here.
+  # GPU 類別：只在 GPU 工作時占用 GPU。編譯與打包在 CPU 工作完成，這裡只測試。
+  # vars.CI_GPU 請設成 ci_cluster 公告的 gpu-<model> 標籤；未設定時這個工作不會被分配到 runner。
   gpu-test:
     needs: build
-    runs-on: v1-gpu-chain
+    runs-on: ${{ vars.CI_GPU || 'gpu-<model>' }}
     timeout-minutes: 30
     container:
       image: ghcr.io/${{ github.repository_owner }}/ci-gpu:latest
-    # Sidecars: reachable on 127.0.0.1 (same pod). NVIDIA_VISIBLE_DEVICES=void keeps them off the GPU
-    # (required on GPU classes). Use unprivileged images.
+    # Sidecar：同一個 pod，以 127.0.0.1 連線。NVIDIA_VISIBLE_DEVICES=void 讓它們不占用 GPU
+    # （GPU 類別必須設定）。請使用非特權映像。
     services:
       redis:
         image: redis:7
@@ -118,15 +120,15 @@ jobs:
         env:
           NVIDIA_VISIBLE_DEVICES: void
     steps:
-      - name: Fork guard (defense in depth, not the real gate)
+      - name: Fork 防護（縱深防禦，不是真正的防線）
         env:
           EVENT_NAME: ${{ github.event_name }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           THIS_REPO: ${{ github.repository }}
         run: |
           if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$THIS_REPO" ]; then
-            echo "::error::Fork pull requests must not run on self-hosted runners (head: '$HEAD_REPO')."
-            echo "This job fails on purpose; it is never skipped because a skipped job counts as passing."
+            echo "::error::Fork PR 不可在自架 runner 上執行（head: '$HEAD_REPO'）。"
+            echo "本工作刻意失敗而非跳過：被跳過的工作會被當成通過。"
             exit 1
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -134,37 +136,8 @@ jobs:
         with:
           name: build-out
           path: out/
-      - name: GPU test
+      - name: GPU 測試
         run: |
           nvidia-smi
           cat out/result.txt
-          # Sidecars: 127.0.0.1:6379 (redis), 127.0.0.1:8080 (nginx-unprivileged).
-
-  # Long GPU class: same structure; only for long jobs, kept off pull requests here.
-  gpu-long:
-    needs: build
-    if: github.event_name != 'pull_request'
-    runs-on: v1-gpu-long
-    timeout-minutes: 240
-    container:
-      image: ghcr.io/${{ github.repository_owner }}/ci-gpu:latest
-    steps:
-      - name: Fork guard (defense in depth, not the real gate)
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          THIS_REPO: ${{ github.repository }}
-        run: |
-          if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$THIS_REPO" ]; then
-            echo "::error::Fork pull requests must not run on self-hosted runners (head: '$HEAD_REPO')."
-            echo "This job fails on purpose; it is never skipped because a skipped job counts as passing."
-            exit 1
-          fi
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: build-out
-          path: out/
-      - name: Long GPU run
-        run: |
-          echo "replace with your long-running GPU job"
+          # Sidecar：127.0.0.1:6379（redis）、127.0.0.1:8080（nginx-unprivileged）。

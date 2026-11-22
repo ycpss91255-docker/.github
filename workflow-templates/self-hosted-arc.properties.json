@@ -1,6 +1,8 @@
 {
   "name": "CI on self-hosted ARC runners",
-  "description": "Reference workflow for the org's ARC runner scale sets: runner class labels, container + run steps, services, CPU/GPU split with artifacts and a fail-not-skip fork guard. Copy and adapt; see doc/self-hosted-runner-policy.md.",
+  "description": "org 自架 ARC runner 的參考 workflow：runner 類別標籤、container + run 步驟、services、以 artifact 分開 CPU／GPU，以及失敗而非跳過的 fork 防護。請複製後調整；見 doc/self-hosted-runner-policy.md。",
   "iconName": "octicon server",
-  "categories": ["Continuous integration"]
+  "categories": [
+    "Continuous integration"
+  ]
 }
