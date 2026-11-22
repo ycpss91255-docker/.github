@@ -1,0 +1,81 @@
+# ycpss91255-docker merge queue ruleset (repo-level) 設定。
+#
+# 組織目前是 GitHub Free 方案，組織層級 ruleset（orgs/<org>/rulesets）需要
+# GitHub Team 以上，API 回 403，因此改由本檔 + script/sync-rulesets.sh 對各 repo
+# 建立「repo 層級」的 `main merge queue` ruleset，做法比照 labels.yaml / topics.yaml。
+#
+# 流程：改本檔 -> PR review -> 合併 -> 由有各 repo admin 權限的人執行
+#   script/sync-rulesets.sh --apply
+# CI 只做 --validate（結構檢查），不會寫入任何 repo 設定。
+#
+# 啟用 merge queue 的前置條件（少一個佇列就會卡住或無法合併）：
+#   1. repo 為 public（組織為 Free 時 private repo 不支援 ruleset / merge queue）。
+#   2. 預設分支的所有必要 CI workflow 都有 `merge_group:` 觸發。
+#   3. required_checks 的 check 名稱必須真的由 CI 產生，且 merge_group 事件也會跑。
+#   4. merge_method 必須是 repo 設定中有開啟的合併方式。
+# 條件未滿足的 repo 放在 `pending`，並寫明缺什麼；補齊後移到 `repos`。
+
+# 所有 repo 共用的 rule 內容（與 base 的 `main merge queue` ruleset 相同）。
+template:
+  name: "main merge queue"
+  include_ref: "~DEFAULT_BRANCH"
+  github_actions_integration_id: 15368   # GitHub Actions app
+  merge_queue:
+    max_entries_to_build: 5
+    min_entries_to_merge: 1
+    max_entries_to_merge: 5
+    min_entries_to_merge_wait_minutes: 5
+    grouping_strategy: ALLGREEN
+    check_response_timeout_minutes: 60
+
+# 已啟用（由 sync-rulesets.sh 管理）。每個 repo 需寫：merge_method、required_checks、
+# allowed_merge_methods、review_thread_resolution。
+repos:
+  base:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge, squash, rebase]
+    review_thread_resolution: true
+  windows_setup:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: false
+
+# 尚未具備前置條件，待各 repo 的 issue 完成後再移到 repos。
+pending:
+  isaac: "main.yaml 無 merge_group；必要 check 為 call-docker-build / docker-build"
+  omniverse_web_viewer: "main.yaml 無 merge_group；repo 只開 squash/rebase（merge_method 需 SQUASH）"
+  agent_harness: "ci.yaml 無 merge_group"
+  asset_converter: "main.yaml 無 merge_group"
+  toml-bridge: "只有 release workflow，沒有 PR CI"
+  docker_harness: "test.yaml 無 merge_group"
+  .github: "check-* workflow 無 merge_group；repo 只開 squash/rebase"
+  isaac_physics_test: "沒有 workflow"
+  isaac_ros_io: "沒有 workflow"
+  realsense_ros2: "main.yaml 無 merge_group"
+  system_repo_template: "沒有 workflow"
+  realsense_ros1: "main.yaml 無 merge_group"
+  ci_bridge: "沒有 workflow"
+  seggpt: "main.yaml 無 merge_group"
+  jetson_sdk_manager: "main.yaml / drift-check.yaml 無 merge_group"
+  multi_run: "self-test.yaml 無 merge_group"
+  template: "ci.yaml / main.yaml 無 merge_group"
+  ros_distro: "main.yaml 無 merge_group"
+  ros2_distro: "main.yaml 無 merge_group"
+  ros1_bridge: "main.yaml 無 merge_group"
+  sick_noetic: "main.yaml 無 merge_group"
+  urg_node_noetic: "main.yaml 無 merge_group"
+  sick_humble: "main.yaml 無 merge_group"
+  urg_node_humble: "main.yaml 無 merge_group"
+  claude_code: "main.yaml 無 merge_group"
+  gemini_cli: "main.yaml 無 merge_group"
+  codex_cli: "main.yaml 無 merge_group"
+  ai_agent: "main.yaml 無 merge_group"
+  sam_manager: "main.yaml 無 merge_group"
+
+# 不適用（原因寫明）。archived repo 由腳本自動略過，不需列入。
+unsupported:
+  arc-gpu-test: "private repo；Free 方案不支援 ruleset / merge queue"
+  sim_asset: "private repo；Free 方案不支援 ruleset / merge queue"
+  software_factory: "空 repo，沒有預設分支"
