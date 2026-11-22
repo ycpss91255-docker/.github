@@ -1,0 +1,170 @@
+# Reference template: CI on the org's self-hosted ARC runners (kubernetes container mode).
+# COPY AND ADAPT. This is a starting point, not a shared or enforced workflow:
+# nothing keeps your copy in sync with this file, and repos may diverge on purpose.
+# Policy and rationale: doc/self-hosted-runner-policy.md in this repo (issue #41).
+#
+# Runner class labels (one scale set per label; the platform is ycpss91255-research/ci_cluster,
+# which owns the exact sizes and any rename -- check its doc/workflow-rules.md before relying on a size):
+#   v1-cpu-s       small CPU jobs: lint, unit tests, small builds
+#   v1-cpu-l       large CPU jobs: big builds and test suites
+#   v1-gpu-chain   GPU jobs in a CPU -> GPU chain (short GPU test that needs an artifact from a CPU job)
+#   v1-gpu-long    long-running GPU jobs
+# Use ONE class label per `runs-on` (a job must match every label listed, so two classes never match).
+#
+# Kubernetes container mode, what it means for the job:
+#   - Every job needs `container:` (an image) and uses `run:` steps. The label picks the class.
+#   - No Docker daemon: no `docker build/run/compose`, no docker.sock, no dind, no `container.options`
+#     (ignored), no Dockerfile actions (`runs.using: docker`). Build images on a hosted runner or a remote builder.
+#   - Not privileged, non-root, no sudo. Use images that run as an unprivileged user (for example
+#     nginxinc/nginx-unprivileged on port 8080, not nginx on port 80). Install tools in your image, not at run time.
+#   - Each job gets a fresh pod and workspace, so no workspace "reclaim" step is needed.
+#   - Do not set NVIDIA_VISIBLE_DEVICES or NVIDIA_DRIVER_CAPABILITIES on a job; the GPU comes from the class.
+#
+# SECURITY, read before editing the guard step:
+#   - `pull_request_target` and `workflow_run` must NEVER target a self-hosted label. They run with
+#     secrets and write tokens (and pull_request_target ignores the fork approval policy).
+#   - The first step of every self-hosted job (below) fails fork PRs. It is DEFENSE IN DEPTH ONLY:
+#     a fork PR runs the workflow file from the PR itself and can simply delete the step. The real gate
+#     is the org setting "Require approval for all external contributors". Do not weaken that setting.
+#   - The guard FAILS the job (`exit 1`) instead of skipping it with `if:`, because a skipped job
+#     counts as passing for required checks and would give a false green.
+#
+# Third-party actions are pinned to a full commit SHA with the version in a comment.
+# Look up a SHA with: gh api repos/<owner>/<action>/git/ref/tags/<tag>   (dereference annotated tags).
+# The org name is never hard-coded: use github.repository_owner (the org is renamed over time).
+
+name: CI (self-hosted ARC)
+
+on:
+  pull_request:
+  push:
+    branches: [ $default-branch ]
+  workflow_dispatch:
+
+# Least privilege; widen per job only when needed.
+permissions:
+  contents: read
+
+jobs:
+  # Small CPU class: lint and unit tests.
+  lint:
+    runs-on: v1-cpu-s
+    timeout-minutes: 15
+    container:
+      # Replace with your own image; it must run as a non-root user and bring its own tools.
+      image: ghcr.io/${{ github.repository_owner }}/ci-cpu:latest
+    steps:
+      - name: Fork guard (defense in depth, not the real gate)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$THIS_REPO" ]; then
+            echo "::error::Fork pull requests must not run on self-hosted runners (head: '$HEAD_REPO')."
+            echo "This job fails on purpose; it is never skipped because a skipped job counts as passing."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Lint and unit test
+        run: |
+          echo "replace with your lint and unit test commands"
+
+  # Large CPU class: heavy build, then hand the result to the GPU job as an artifact.
+  build:
+    runs-on: v1-cpu-l
+    timeout-minutes: 60
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/ci-cpu:latest
+    steps:
+      - name: Fork guard (defense in depth, not the real gate)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$THIS_REPO" ]; then
+            echo "::error::Fork pull requests must not run on self-hosted runners (head: '$HEAD_REPO')."
+            echo "This job fails on purpose; it is never skipped because a skipped job counts as passing."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build
+        run: |
+          mkdir -p out
+          echo "replace with your build; write results to ./out" > out/result.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: build-out
+          path: out/
+          retention-days: 1
+
+  # GPU class: hold the GPU only for GPU work. Compile and package on a CPU job, test here.
+  gpu-test:
+    needs: build
+    runs-on: v1-gpu-chain
+    timeout-minutes: 30
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/ci-gpu:latest
+    # Sidecars: reachable on 127.0.0.1 (same pod). NVIDIA_VISIBLE_DEVICES=void keeps them off the GPU
+    # (required on GPU classes). Use unprivileged images.
+    services:
+      redis:
+        image: redis:7
+        env:
+          NVIDIA_VISIBLE_DEVICES: void
+      web:
+        image: nginxinc/nginx-unprivileged:stable
+        env:
+          NVIDIA_VISIBLE_DEVICES: void
+    steps:
+      - name: Fork guard (defense in depth, not the real gate)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$THIS_REPO" ]; then
+            echo "::error::Fork pull requests must not run on self-hosted runners (head: '$HEAD_REPO')."
+            echo "This job fails on purpose; it is never skipped because a skipped job counts as passing."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: build-out
+          path: out/
+      - name: GPU test
+        run: |
+          nvidia-smi
+          cat out/result.txt
+          # Sidecars: 127.0.0.1:6379 (redis), 127.0.0.1:8080 (nginx-unprivileged).
+
+  # Long GPU class: same structure; only for long jobs, kept off pull requests here.
+  gpu-long:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: v1-gpu-long
+    timeout-minutes: 240
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/ci-gpu:latest
+    steps:
+      - name: Fork guard (defense in depth, not the real gate)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$THIS_REPO" ]; then
+            echo "::error::Fork pull requests must not run on self-hosted runners (head: '$HEAD_REPO')."
+            echo "This job fails on purpose; it is never skipped because a skipped job counts as passing."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: build-out
+          path: out/
+      - name: Long GPU run
+        run: |
+          echo "replace with your long-running GPU job"
