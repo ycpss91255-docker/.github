@@ -1,4 +1,4 @@
-# ycpss91255-docker org topic taxonomy.
+# ycpss91255-lab org topic taxonomy.
 #
 # Single source of truth for GitHub repository topics across the org.
 # Sync to GitHub via `script/sync-topics.sh --apply`; CI runs the same
@@ -107,21 +107,31 @@ repos:
   seggpt:
     [application, docker, python, ml, segmentation]
 
-  # --- agent ---
-  ai_agent:
-    [agent, docker, claude, gemini, codex]
-  claude_code:
-    [agent, docker, claude]
-  gemini_cli:
-    [agent, docker, gemini]
-  codex_cli:
-    [agent, docker, codex]
-
   # --- tool ---
   template:
     [tool, docker, template, bash]
   multi_run:
     [tool, docker, bash, multi-container]
+
+  # --- application (transferred from ycpss91255-research) ---
+  solidworks_urdf_exporter:
+    [application]
+  Solidworks-MCP:
+    [application, python]
+  config_manager:
+    [application, docker, python]
+  isaac-sim-webrtc-mediamtx:
+    [application, docker, simulator, isaac-sim]
+
+  # --- tool (transferred from ycpss91255-research) ---
+  arch_drawio:
+    [tool, python]
+  ci_cluster:
+    [tool, bash]
+  vendor_kit:
+    [tool]
+  github_runner:
+    [tool, bash]
 
   # --- meta ---
   docker_harness:
@@ -136,3 +146,8 @@ repos:
   osrf_ros_noetic:  [docker, ros1, noetic, archived]
   osrf_ros_kinetic: [docker, ros1, kinetic, archived]
   osrf_ros2_humble: [docker, ros2, humble, archived]
+  github_runner_archived: [bash, archived]
+  ai_agent:         [docker, claude, gemini, codex, archived]
+  claude_code:      [docker, claude, archived]
+  gemini_cli:       [docker, gemini, archived]
+  codex_cli:        [docker, codex, archived]

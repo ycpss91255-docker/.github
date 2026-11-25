@@ -8,14 +8,15 @@
 #   on the self-hosted host -- not even an approved fork PR. The runner user is
 #   in the docker group (== root-equivalent: `docker run -v /:/host` reaches the
 #   whole host), so this gate is load-bearing, not cosmetic. See the
-#   ycpss91255-docker/github_runner security model. A contributor with their own
+#   ycpss91255-lab/github_runner security model. A contributor with their own
 #   GPU still runs the full suite in their own fork (a push in the fork
 #   dispatches onto the fork owner's runner, never this host).
 #
 # Self-hosted runner policy (org-wide):
 #   - Runner group: the org runner group `trusted-self-hosted` holds the one
 #     shared runner, C01013328-ycpss91255-docker-org (labels self-hosted, Linux,
-#     X64, gpu). The runner is SHARED across repos, not per repo: a job from
+#     X64, gpu; the name is a literal registered on the host and was not
+#     changed by the org rename). The runner is SHARED across repos, not per repo: a job from
 #     any allowed repo lands on the same host, the same docker daemon and the
 #     same workspace root. No per-repo runner is added.
 #   - Allowed repos: only base, isaac and omniverse_web_viewer -- the repos
@@ -25,12 +26,12 @@
 #     workflow lock further down matter.
 #   - One entry point: every self-hosted job in the org MUST go through this
 #     reusable workflow, `uses:
-#     ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@main`.
+#     ycpss91255-lab/.github/.github/workflows/gpu-self-hosted.yml@main`.
 #     A repo never writes its own `runs-on: [self-hosted, ...]` job, because
 #     that job would bypass the fork gate and the workspace reclaim here.
 #   - Planned lock: the group will be restricted to this workflow
 #     (restricted_to_workflows:
-#     ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@refs/heads/main).
+#     ycpss91255-lab/.github/.github/workflows/gpu-self-hosted.yml@refs/heads/main).
 #     Then only this file, as it is on main here, can reach the runner, so a
 #     fork PR that edits its own workflow cannot reach the host even if a
 #     maintainer approves the run. The lock is applied ONLY AFTER isaac,
@@ -38,7 +39,7 @@
 #     it on earlier would strand their direct jobs in the queue.
 #   - Why fork code must never reach it: the runner user is in the docker group
 #     (root-equivalent, see above). Any job that runs on the host owns the host.
-#   The full threat model lives in ycpss91255-docker/github_runner, in
+#   The full threat model lives in ycpss91255-lab/github_runner, in
 #   SECURITY.md ("Threat model (summary)") and the README "Security model"
 #   section; this header states only the org policy and does not repeat it.
 #
@@ -101,7 +102,7 @@
 # Usage (caller repo), minimal -- unchanged from the first version:
 #   jobs:
 #     gpu:
-#       uses: ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@main
+#       uses: ycpss91255-lab/.github/.github/workflows/gpu-self-hosted.yml@main
 #       with:
 #         run-script: ./test/ci/gpu_suite.sh
 #         timeout-minutes: 30
@@ -112,7 +113,7 @@
 #     tier-b-visual-e2e:
 #       permissions: {contents: read}
 #       concurrency: {group: owv-tier-b-visual-e2e, cancel-in-progress: false}
-#       uses: ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@main
+#       uses: ycpss91255-lab/.github/.github/workflows/gpu-self-hosted.yml@main
 #       with:
 #         prepare-script: bash script/ci/tier_b_prepare.sh
 #         run-script: bash script/ci/tier_b_visual_e2e.sh
@@ -132,7 +133,7 @@
 #     publish:
 #       permissions: {contents: read, packages: write}
 #       concurrency: {group: isaac-publish-stream-source, cancel-in-progress: false}
-#       uses: ycpss91255-docker/.github/.github/workflows/gpu-self-hosted.yml@main
+#       uses: ycpss91255-lab/.github/.github/workflows/gpu-self-hosted.yml@main
 #       with:
 #         run-script: bash script/ci/publish_stream_source.sh
 #         timeout-minutes: 90
@@ -383,7 +384,7 @@ jobs:
       # the host, not inside the container), so checkout's clean step
       # (clean: true -> git clean -ffdx) can then wipe stale and gitignored
       # files itself. Non-destructive. GITHUB_WORKSPACE always exists by the
-      # time a step runs. See ycpss91255-docker/github_runner#77.
+      # time a step runs. See ycpss91255-lab/github_runner#77.
       #
       # Rootless-aware: under rootless Docker, container root IS the runner
       # user, and the container's $(id -u) maps to a subuid on the host, so
@@ -391,7 +392,7 @@ jobs:
       # cannot touch. Use 0:0 (container root == runner user) when the daemon
       # reports rootless; keep the current owner otherwise. The rootful
       # daemon's SecurityOptions does not contain "rootless", so behaviour on
-      # a rootful runner is unchanged. See ycpss91255-docker/.github#38.
+      # a rootful runner is unchanged. See ycpss91255-lab/.github#38.
       #
       # busybox is pinned by DIGEST (the busybox:1 multi-arch index as of
       # 2026-11-10): it runs as root with the workspace mounted on a

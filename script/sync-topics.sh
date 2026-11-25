@@ -17,7 +17,7 @@
 
 set -euo pipefail
 
-readonly ORG="ycpss91255-docker"
+readonly ORG="ycpss91255-lab"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

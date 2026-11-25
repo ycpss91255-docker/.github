@@ -1,4 +1,4 @@
-# ycpss91255-docker org label vocabulary.
+# ycpss91255-lab org label vocabulary.
 #
 # Single source of truth for GitHub issue labels across the org.
 # Sync to GitHub via `script/sync-labels.sh --apply`; CI runs the same
