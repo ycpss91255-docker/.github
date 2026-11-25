@@ -72,8 +72,6 @@ ROS 機器人開發、AI Agent 工具與應用部署的 Docker 容器化環境�
 |------|------|
 | [base](https://github.com/ycpss91255-lab/base) | 共用模板 — 腳本、測試、CI workflows |
 | [multi_run](https://github.com/ycpss91255-lab/multi_run) | 同時啟動多個不同工作區的 Docker 容器 |
-| [arch_drawio](https://github.com/ycpss91255-lab/arch_drawio) | 機器人架構圖（drawio）與產生腳本 |
-| [ci_cluster](https://github.com/ycpss91255-lab/ci_cluster) | 以 k3s 為基礎、供 GitHub Actions（ARC）與 GitLab CI 使用的 CI 叢集 |
 | [vendor_kit](https://github.com/ycpss91255-lab/vendor_kit) | Vendoring 引擎：將發行樹安裝到使用端 repo，並管理升級與回滾 |
 | [github_runner](https://github.com/ycpss91255-lab/github_runner) | 佈建與管理自架 GitHub Actions runner |
 

@@ -72,8 +72,6 @@ Each repo is a single Dockerfile that switches distro and base image flavour via
 |------------|-------------|
 | [base](https://github.com/ycpss91255-lab/base) | Shared template — scripts, tests, CI workflows for all Docker container repos |
 | [multi_run](https://github.com/ycpss91255-lab/multi_run) | Launch multiple Docker containers from different workspaces simultaneously |
-| [arch_drawio](https://github.com/ycpss91255-lab/arch_drawio) | Robot architecture diagrams (drawio) and generator scripts |
-| [ci_cluster](https://github.com/ycpss91255-lab/ci_cluster) | k3s-based CI cluster serving GitHub Actions (ARC) and GitLab CI |
 | [vendor_kit](https://github.com/ycpss91255-lab/vendor_kit) | Vendoring engine: install, upgrade and roll back a shipped tree in a consumer repo |
 | [github_runner](https://github.com/ycpss91255-lab/github_runner) | Provision and manage self-hosted GitHub Actions runners |
 

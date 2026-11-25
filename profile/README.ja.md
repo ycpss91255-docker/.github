@@ -72,8 +72,6 @@ GitHub トピックフィルタでカテゴリ別に閲覧：
 |-----------|------|
 | [base](https://github.com/ycpss91255-lab/base) | 共有テンプレート — スクリプト、テスト、CI workflows |
 | [multi_run](https://github.com/ycpss91255-lab/multi_run) | 複数ワークスペースの Docker コンテナを同時起動 |
-| [arch_drawio](https://github.com/ycpss91255-lab/arch_drawio) | ロボットのアーキテクチャ図（drawio）と生成スクリプト |
-| [ci_cluster](https://github.com/ycpss91255-lab/ci_cluster) | GitHub Actions（ARC）と GitLab CI 向けの k3s ベース CI クラスタ |
 | [vendor_kit](https://github.com/ycpss91255-lab/vendor_kit) | vendoring エンジン：配布ツリーを利用側 repo へ導入し、アップグレードとロールバックを管理 |
 | [github_runner](https://github.com/ycpss91255-lab/github_runner) | セルフホスト GitHub Actions runner の構築と管理 |
 
