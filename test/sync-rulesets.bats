@@ -165,3 +165,51 @@ reason = config["pending"]["isaac"]
 assert "gate" in reason and "isaac#469" in reason
 PY
 }
+
+@test "base 只允許 merge commit" {
+  python3 - "$root/rulesets.yaml" <<'PY'
+import sys
+import yaml
+
+with open(sys.argv[1], encoding="utf-8") as f:
+    config = yaml.safe_load(f)
+methods = config["repos"]["base"]["allowed_merge_methods"]
+assert methods == ["merge"], methods
+PY
+}
+
+@test "同一個 repo 只能出現在一個分類" {
+  python3 - "$root/rulesets.yaml" <<'PY'
+import sys
+import yaml
+
+with open(sys.argv[1], encoding="utf-8") as f:
+    config = yaml.safe_load(f)
+seen = {}
+for section in ("repos", "pending", "unsupported"):
+    for repo in config[section]:
+        name = repo.casefold()
+        assert name not in seen, f"{repo} 同時出現在 {seen[name]} 和 {section}"
+        seen[name] = section
+PY
+}
+
+@test "新增的 repo 歸入指定分類，已封存的 repo 移出名單" {
+  python3 - "$root/rulesets.yaml" <<'PY'
+import sys
+import yaml
+
+with open(sys.argv[1], encoding="utf-8") as f:
+    config = yaml.safe_load(f)
+pending = {
+    "Solidworks-MCP", "isaac-sim-webrtc-mediamtx", "nas_setup",
+    "solidworks_urdf_exporter", "config_manager", "github_runner", "vendor_kit",
+}
+unsupported = {"arch_drawio", "ci_cluster", "test_level_demo"}
+archived = {"ai_agent", "claude_code", "codex_cli", "gemini_cli"}
+roster = set(config["repos"]) | set(config["pending"]) | set(config["unsupported"])
+assert pending <= config["pending"].keys(), pending - config["pending"].keys()
+assert unsupported <= config["unsupported"].keys(), unsupported - config["unsupported"].keys()
+assert archived.isdisjoint(roster), archived & roster
+PY
+}

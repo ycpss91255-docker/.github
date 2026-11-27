@@ -36,7 +36,7 @@ repos:
   base:
     merge_method: MERGE
     required_checks: [ci-rollup]
-    allowed_merge_methods: [merge, squash, rebase]
+    allowed_merge_methods: [merge]
     review_thread_resolution: true
   isaac_lab:
     merge_method: MERGE
@@ -76,14 +76,20 @@ pending:
   urg_node_noetic: "main.yaml 無 merge_group"
   sick_humble: "main.yaml 無 merge_group"
   urg_node_humble: "main.yaml 無 merge_group"
-  claude_code: "main.yaml 無 merge_group"
-  gemini_cli: "main.yaml 無 merge_group"
-  codex_cli: "main.yaml 無 merge_group"
-  ai_agent: "main.yaml 無 merge_group"
   sam_manager: "main.yaml 無 merge_group"
+  Solidworks-MCP: "沒有 workflow"
+  isaac-sim-webrtc-mediamtx: "沒有 workflow"
+  nas_setup: "沒有 workflow"
+  solidworks_urdf_exporter: "沒有 workflow；預設分支是 master"
+  config_manager: "ci.yaml 已有 merge_group；required check 名稱待確認後移到 repos（repo 只開 merge commit）"
+  github_runner: "ci.yaml / selfhosted-smoke.yaml 無 merge_group"
+  vendor_kit: "commit-lint / docs / pr-rules / test workflow 無 merge_group"
 
 # 不適用（原因寫明）。archived repo 由腳本自動略過，不需列入。
 unsupported:
   arc-gpu-test: "private repo；Free 方案不支援 ruleset / merge queue"
   sim_asset: "private repo；Free 方案不支援 ruleset / merge queue"
+  arch_drawio: "private repo；Free 方案不支援 ruleset / merge queue"
+  ci_cluster: "private repo；Free 方案不支援 ruleset / merge queue"
+  test_level_demo: "private repo；Free 方案不支援 ruleset / merge queue"
   software_factory: "空 repo，沒有預設分支"
