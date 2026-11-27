@@ -1,0 +1,45 @@
+name: check-rulesets
+
+# ShellCheck the sync script, validate rulesets.yaml, and run offline tests.
+#
+# 刻意不做 live drift 比對：GITHUB_TOKEN 讀不到其他 repo 的 ruleset 設定，
+# 且 yaml 修改 PR 本來就會先於 live 設定。實際比對與套用請在有各 repo admin
+# 權限的環境執行：
+#   script/sync-rulesets.sh --dry-run
+#   script/sync-rulesets.sh --apply
+
+on:
+  pull_request:
+    paths:
+      - "rulesets.yaml"
+      - "script/sync-rulesets.sh"
+      - "test/sync-rulesets.bats"
+      - ".github/workflows/check-rulesets.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "rulesets.yaml"
+      - "script/sync-rulesets.sh"
+      - "test/sync-rulesets.bats"
+      - ".github/workflows/check-rulesets.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck
+        run: shellcheck script/sync-rulesets.sh
+      - name: Install PyYAML
+        run: python3 -m pip install --user pyyaml
+      - name: Validate rulesets.yaml structure
+        run: bash script/sync-rulesets.sh --validate
+      - name: Run offline ruleset tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+          bats test/sync-rulesets.bats
