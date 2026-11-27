@@ -1,8 +1,8 @@
 **[English](README.md)** | **[繁體中文](README.zh-TW.md)** | **[简体中文](README.zh-CN.md)** | **[日本語](README.ja.md)**
 
-[![CI](https://github.com/ycpss91255-docker/.github/actions/workflows/check-topics.yaml/badge.svg)](https://github.com/ycpss91255-docker/.github/actions/workflows/check-topics.yaml) [![License](https://img.shields.io/badge/License-Apache--2.0-blue?style=flat-square)](https://github.com/ycpss91255-docker/.github/blob/main/LICENSE)
+[![CI](https://github.com/ycpss91255-lab/.github/actions/workflows/check-topics.yaml/badge.svg)](https://github.com/ycpss91255-lab/.github/actions/workflows/check-topics.yaml) [![License](https://img.shields.io/badge/License-Apache--2.0-blue?style=flat-square)](https://github.com/ycpss91255-lab/.github/blob/main/LICENSE)
 
-# ycpss91255-docker
+# ycpss91255-lab
 
 ROS 機器人開發、AI Agent 工具與應用部署的 Docker 容器化環境。
 
@@ -24,10 +24,9 @@ ROS 機器人開發、AI Agent 工具與應用部署的 Docker 容器化環境�
 ### 依主題篩選
 
 使用 GitHub 主題篩選瀏覽各類 repo：
-[`environment`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:environment) ·
-[`application`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:application) ·
-[`agent`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:agent) ·
-[`tool`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:tool)
+[`environment`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:environment) ·
+[`application`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:application) ·
+[`tool`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:tool)
 
 ---
 
@@ -40,22 +39,10 @@ ROS 機器人開發、AI Agent 工具與應用部署的 Docker 容器化環境�
 
 | 倉庫 | ROS | 發行版 | 變體 |
 |------|-----|--------|------|
-| [ros_distro](https://github.com/ycpss91255-docker/ros_distro) | ROS 1 | Noetic、Kinetic | `ros:*-ros-base`（x86_64 + ARM）、`osrf/ros:*-desktop-full`（x86_64） |
-| [ros2_distro](https://github.com/ycpss91255-docker/ros2_distro) | ROS 2 | Humble、Jazzy、Iron | `ros:*-ros-base`（x86_64 + ARM）、`osrf/ros:*-desktop-full`（x86_64） |
+| [ros_distro](https://github.com/ycpss91255-lab/ros_distro) | ROS 1 | Noetic、Kinetic | `ros:*-ros-base`（x86_64 + ARM）、`osrf/ros:*-desktop-full`（x86_64） |
+| [ros2_distro](https://github.com/ycpss91255-lab/ros2_distro) | ROS 2 | Humble、Jazzy、Iron | `ros:*-ros-base`（x86_64 + ARM）、`osrf/ros:*-desktop-full`（x86_64） |
 
-> 早期單一 distro repo（`ros_noetic`、`ros_kinetic`、`ros2_humble`、`osrf_ros_noetic`、`osrf_ros_kinetic`、`osrf_ros2_humble`）已 archived，可透過 [`archived`](https://github.com/orgs/ycpss91255-docker/repositories?q=topic:archived) 主題瀏覽。
-
-</details>
-
-<details>
-<summary><strong>AI Agent — 開發容器</strong></summary>
-
-| 倉庫 | AI 工具 | 說明 |
-|------|---------|------|
-| [ai_agent](https://github.com/ycpss91255-docker/ai_agent) | All-in-one | DinD 容器，含 Claude Code + Gemini CLI + Codex CLI |
-| [claude_code](https://github.com/ycpss91255-docker/claude_code) | Claude Code | DinD 容器，含 Anthropic Claude Code |
-| [gemini_cli](https://github.com/ycpss91255-docker/gemini_cli) | Gemini CLI | DinD 容器，含 Google Gemini CLI |
-| [codex_cli](https://github.com/ycpss91255-docker/codex_cli) | Codex CLI | DinD 容器，含 OpenAI Codex CLI |
+> 早期單一 distro repo（`ros_noetic`、`ros_kinetic`、`ros2_humble`、`osrf_ros_noetic`、`osrf_ros_kinetic`、`osrf_ros2_humble`）已 archived，可透過 [`archived`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:archived) 主題瀏覽。
 
 </details>
 
@@ -64,13 +51,17 @@ ROS 機器人開發、AI Agent 工具與應用部署的 Docker 容器化環境�
 
 | 倉庫 | 說明 |
 |------|------|
-| [ros1_bridge](https://github.com/ycpss91255-docker/ros1_bridge) | ROS 1（Noetic）↔ ROS 2（Humble + Jazzy）橋接容器；多架構（amd64 + arm64/Jetson） |
-| [urg_node_humble](https://github.com/ycpss91255-docker/urg_node_humble) | ROS 2 Humble 容器化 Hokuyo URG LiDAR 驅動 |
-| [urg_node_noetic](https://github.com/ycpss91255-docker/urg_node_noetic) | ROS 1 Noetic 容器化 Hokuyo URG LiDAR 驅動 |
-| [realsense_humble](https://github.com/ycpss91255-docker/realsense_humble) | ROS 2 Humble 容器化 Intel RealSense 驅動 |
-| [realsense_noetic](https://github.com/ycpss91255-docker/realsense_noetic) | ROS 1 Noetic 容器化 Intel RealSense 驅動 |
-| [sick_humble](https://github.com/ycpss91255-docker/sick_humble) | ROS 2 Humble 容器化 SICK Safety Scanner 驅動 |
-| [sick_noetic](https://github.com/ycpss91255-docker/sick_noetic) | ROS 1 Noetic 容器化 SICK Safety Scanner 驅動 |
+| [ros1_bridge](https://github.com/ycpss91255-lab/ros1_bridge) | ROS 1（Noetic）↔ ROS 2（Humble + Jazzy）橋接容器；多架構（amd64 + arm64/Jetson） |
+| [urg_node_humble](https://github.com/ycpss91255-lab/urg_node_humble) | ROS 2 Humble 容器化 Hokuyo URG LiDAR 驅動 |
+| [urg_node_noetic](https://github.com/ycpss91255-lab/urg_node_noetic) | ROS 1 Noetic 容器化 Hokuyo URG LiDAR 驅動 |
+| [realsense_humble](https://github.com/ycpss91255-lab/realsense_humble) | ROS 2 Humble 容器化 Intel RealSense 驅動 |
+| [realsense_noetic](https://github.com/ycpss91255-lab/realsense_noetic) | ROS 1 Noetic 容器化 Intel RealSense 驅動 |
+| [sick_humble](https://github.com/ycpss91255-lab/sick_humble) | ROS 2 Humble 容器化 SICK Safety Scanner 驅動 |
+| [sick_noetic](https://github.com/ycpss91255-lab/sick_noetic) | ROS 1 Noetic 容器化 SICK Safety Scanner 驅動 |
+| [solidworks_urdf_exporter](https://github.com/ycpss91255-lab/solidworks_urdf_exporter) | SolidWorks 轉 URDF 匯出工具 |
+| [Solidworks-MCP](https://github.com/ycpss91255-lab/Solidworks-MCP) | 以 Claude 自動操作 SolidWorks 的 MCP 伺服器 |
+| [config_manager](https://github.com/ycpss91255-lab/config_manager) | 具 Web UI 與 Git 後端的集中式設定管理 |
+| [isaac-sim-webrtc-mediamtx](https://github.com/ycpss91255-lab/isaac-sim-webrtc-mediamtx) | Isaac Sim WebRTC 用戶端多工，將影像串流至多個目的地 |
 
 </details>
 
@@ -79,7 +70,11 @@ ROS 機器人開發、AI Agent 工具與應用部署的 Docker 容器化環境�
 
 | 倉庫 | 說明 |
 |------|------|
-| [base](https://github.com/ycpss91255-docker/base) | 共用模板 — 腳本、測試、CI workflows |
-| [multi_run](https://github.com/ycpss91255-docker/multi_run) | 同時啟動多個不同工作區的 Docker 容器 |
+| [base](https://github.com/ycpss91255-lab/base) | 共用模板 — 腳本、測試、CI workflows |
+| [multi_run](https://github.com/ycpss91255-lab/multi_run) | 同時啟動多個不同工作區的 Docker 容器 |
+| [vendor_kit](https://github.com/ycpss91255-lab/vendor_kit) | Vendoring 引擎：將發行樹安裝到使用端 repo，並管理升級與回滾 |
+| [github_runner](https://github.com/ycpss91255-lab/github_runner) | 佈建與管理自架 GitHub Actions runner |
 
 </details>
+
+> 已封存的 AI Agent repo（`ai_agent`、`claude_code`、`gemini_cli`、`codex_cli`）不再列出，可透過 [`archived`](https://github.com/orgs/ycpss91255-lab/repositories?q=topic:archived) topic 瀏覽。
