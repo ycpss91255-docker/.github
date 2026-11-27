@@ -21,12 +21,12 @@
 
 set -euo pipefail
 
-readonly ORG="ycpss91255-docker"
+readonly ORG="ycpss91255-lab"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly REPO_ROOT
-readonly YAML_FILE="${REPO_ROOT}/rulesets.yaml"
+readonly YAML_FILE="${SYNC_RULESETS_YAML:-${REPO_ROOT}/rulesets.yaml}"
 
 usage() {
   cat >&2 <<EOF
@@ -93,7 +93,8 @@ def build(repo):
                 "max_entries_to_merge": q["max_entries_to_merge"],
                 "min_entries_to_merge_wait_minutes": q["min_entries_to_merge_wait_minutes"],
                 "grouping_strategy": q["grouping_strategy"],
-                "check_response_timeout_minutes": q["check_response_timeout_minutes"],
+                "check_response_timeout_minutes": o.get("check_response_timeout_minutes",
+                                                        q["check_response_timeout_minutes"]),
             }},
             {"type": "required_status_checks", "parameters": {
                 "strict_required_status_checks_policy": True,
@@ -166,6 +167,12 @@ elif mode == "validate":
             errs.append(f"{n}: merge_method {o.get('merge_method')} not in allowed_merge_methods")
         if "review_thread_resolution" not in o:
             errs.append(f"{n}: review_thread_resolution is required")
+        if "check_response_timeout_minutes" in o:
+            timeout = o["check_response_timeout_minutes"]
+            if type(timeout) is not int:
+                errs.append(f"{n}: check_response_timeout_minutes must be an integer")
+            elif not 1 <= timeout <= 360:
+                errs.append(f"{n}: check_response_timeout_minutes must be in the range 1..360")
     if errs:
         print("\n".join("ERROR: " + e for e in errs), file=sys.stderr)
         sys.exit(1)

@@ -1,4 +1,4 @@
-# ycpss91255-docker merge queue ruleset (repo-level) 設定。
+# ycpss91255-lab merge queue ruleset (repo-level) 設定。
 #
 # 組織目前是 GitHub Free 方案，組織層級 ruleset（orgs/<org>/rulesets）需要
 # GitHub Team 以上，API 回 403，因此改由本檔 + script/sync-rulesets.sh 對各 repo
@@ -6,7 +6,7 @@
 #
 # 流程：改本檔 -> PR review -> 合併 -> 由有各 repo admin 權限的人執行
 #   script/sync-rulesets.sh --apply
-# CI 只做 --validate（結構檢查），不會寫入任何 repo 設定。
+# CI 執行 --validate（結構檢查）與離線測試，不會寫入任何 repo 設定。
 #
 # 啟用 merge queue 的前置條件（少一個佇列就會卡住或無法合併）：
 #   1. repo 為 public（組織為 Free 時 private repo 不支援 ruleset / merge queue）。
@@ -30,12 +30,20 @@ template:
 
 # 已啟用（由 sync-rulesets.sh 管理）。每個 repo 需寫：merge_method、required_checks、
 # allowed_merge_methods、review_thread_resolution。
+# 選填 check_response_timeout_minutes（整數，1 到 360 分鐘），預設使用
+# template.merge_queue.check_response_timeout_minutes。
 repos:
   base:
     merge_method: MERGE
     required_checks: [ci-rollup]
     allowed_merge_methods: [merge, squash, rebase]
     review_thread_resolution: true
+  isaac_lab:
+    merge_method: MERGE
+    required_checks: [gate]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+    check_response_timeout_minutes: 240
   windows_setup:
     merge_method: MERGE
     required_checks: [ci-rollup]
@@ -44,7 +52,7 @@ repos:
 
 # 尚未具備前置條件，待各 repo 的 issue 完成後再移到 repos。
 pending:
-  isaac: "main.yaml 無 merge_group；必要 check 為 call-docker-build / docker-build"
+  isaac: "必要 check 是 gate；等 isaac#469 合併 merge_group trigger（合併後移到 repos，check_response_timeout_minutes 設 240）"
   omniverse_web_viewer: "main.yaml 無 merge_group；repo 只開 squash/rebase（merge_method 需 SQUASH）"
   agent_harness: "ci.yaml 無 merge_group"
   asset_converter: "main.yaml 無 merge_group"
