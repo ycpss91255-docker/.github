@@ -44,6 +44,11 @@ repos:
     allowed_merge_methods: [merge]
     review_thread_resolution: true
     check_response_timeout_minutes: 240
+  isaac_ros_io:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
   windows_setup:
     merge_method: MERGE
     required_checks: [ci-rollup]
@@ -60,7 +65,6 @@ pending:
   docker_harness: "test.yaml 無 merge_group"
   .github: "check-* workflow 無 merge_group；repo 只開 squash/rebase"
   isaac_physics_test: "沒有 workflow"
-  isaac_ros_io: "沒有 workflow"
   realsense_ros2: "main.yaml 無 merge_group"
   system_repo_template: "沒有 workflow"
   realsense_ros1: "main.yaml 無 merge_group"
