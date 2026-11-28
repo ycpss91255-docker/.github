@@ -60,7 +60,7 @@ repos:
     required_checks: [ci-rollup]
     allowed_merge_methods: [merge]
     review_thread_resolution: true
-    check_response_timeout_minutes: 120
+    check_response_timeout_minutes: 180
   windows_setup:
     merge_method: MERGE
     required_checks: [ci-rollup]
