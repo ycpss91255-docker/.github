@@ -38,6 +38,12 @@ repos:
     required_checks: [ci-rollup]
     allowed_merge_methods: [merge]
     review_thread_resolution: true
+  isaac:
+    merge_method: MERGE
+    required_checks: [gate]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+    check_response_timeout_minutes: 240
   isaac_lab:
     merge_method: MERGE
     required_checks: [gate]
@@ -57,7 +63,6 @@ repos:
 
 # 尚未具備前置條件，待各 repo 的 issue 完成後再移到 repos。
 pending:
-  isaac: "必要 check 是 gate；等 isaac#469 合併 merge_group trigger（合併後移到 repos，check_response_timeout_minutes 設 240）"
   omniverse_web_viewer: "main.yaml 無 merge_group；repo 只開 squash/rebase（merge_method 需 SQUASH）"
   agent_harness: "ci.yaml 無 merge_group"
   asset_converter: "main.yaml 無 merge_group"
