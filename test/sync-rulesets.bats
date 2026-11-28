@@ -146,7 +146,7 @@ EOF
   done
 }
 
-@test "the repository manifest manages isaac_lab and keeps isaac pending" {
+@test "the repository manifest manages isaac_lab and isaac" {
   python3 - "$root/rulesets.yaml" <<'PY'
 import sys
 import yaml
@@ -160,9 +160,10 @@ assert repo["allowed_merge_methods"] == ["merge"]
 assert repo["review_thread_resolution"] is True
 assert repo["check_response_timeout_minutes"] == 240
 assert "isaac_lab" not in config["pending"] and "isaac_lab" not in config["unsupported"]
-assert "isaac" not in config["repos"]
-reason = config["pending"]["isaac"]
-assert "gate" in reason and "isaac#469" in reason
+isaac = config["repos"]["isaac"]
+assert isaac["required_checks"] == ["gate"]
+assert isaac["check_response_timeout_minutes"] == 240
+assert "isaac" not in config["pending"] and "isaac" not in config["unsupported"]
 PY
 }
 
