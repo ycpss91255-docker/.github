@@ -55,6 +55,12 @@ repos:
     required_checks: [ci-rollup]
     allowed_merge_methods: [merge]
     review_thread_resolution: true
+  seggpt:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+    check_response_timeout_minutes: 120
   windows_setup:
     merge_method: MERGE
     required_checks: [ci-rollup]
@@ -138,7 +144,6 @@ pending:
   isaac_physics_test: "沒有 workflow"
   system_repo_template: "沒有 workflow"
   ci_bridge: "沒有 workflow"
-  seggpt: "PR #28 已開未合併：main.yaml 加 merge_group 與聚合 job ci-rollup，但 call-docker-build 完整建置超過 60 分鐘，CI 尚未結束；合併後移到 repos（required_checks [ci-rollup]，check_response_timeout_minutes 建議 120；現有 branch protection 要求 'call-docker-build / docker-build'，啟用前改成 ci-rollup）"
   sick_humble: "main.yaml 無 merge_group"
   urg_node_humble: "main.yaml 無 merge_group"
   sam_manager: "main.yaml 無 merge_group"
