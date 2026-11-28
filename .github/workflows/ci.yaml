@@ -1,0 +1,37 @@
+name: ci
+
+# merge queue 用的單一必要 check（ci-rollup）。
+#
+# check-labels / check-topics / check-rulesets 帶有 paths 過濾，沒動到相關檔案
+# 的 PR 不會跑，不能直接當 required check。本 workflow 不設 paths，PR 與
+# merge_group 都會跑，並一次執行三個 lint（ShellCheck + 結構檢查 + 離線測試）。
+# drift 比對只在排程 / 手動，不屬於合併前置檢查。
+
+on:
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci-rollup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --user pyyaml
+          sudo apt-get update
+          sudo apt-get install -y bats
+      - name: ShellCheck
+        run: shellcheck script/sync-labels.sh script/sync-topics.sh script/sync-rulesets.sh
+      - name: Validate labels.yaml
+        run: script/sync-labels.sh --validate
+      - name: Validate topics.yaml
+        run: script/sync-topics.sh --validate
+      - name: Validate rulesets.yaml
+        run: bash script/sync-rulesets.sh --validate
+      - name: Offline ruleset tests
+        run: bats test/sync-rulesets.bats
