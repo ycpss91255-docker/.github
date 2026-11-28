@@ -60,29 +60,85 @@ repos:
     required_checks: [ci-rollup]
     allowed_merge_methods: [merge]
     review_thread_resolution: false
+  agent_harness:
+    merge_method: MERGE
+    required_checks: [ci]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  asset_converter:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  docker_harness:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  .github:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  realsense_ros2:
+    merge_method: MERGE
+    required_checks: [ci-passed]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  realsense_ros1:
+    merge_method: MERGE
+    required_checks: [ci-passed]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  jetson_sdk_manager:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  multi_run:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  template:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  ros_distro:
+    merge_method: MERGE
+    required_checks: [ci-passed]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  ros2_distro:
+    merge_method: MERGE
+    required_checks: [ci-passed]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  ros1_bridge:
+    merge_method: MERGE
+    required_checks: [ci-summary]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  sick_noetic:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
+  urg_node_noetic:
+    merge_method: MERGE
+    required_checks: [ci-rollup]
+    allowed_merge_methods: [merge]
+    review_thread_resolution: true
 
 # 尚未具備前置條件，待各 repo 的 issue 完成後再移到 repos。
 pending:
   omniverse_web_viewer: "main.yaml 無 merge_group；repo 只開 squash/rebase（merge_method 需 SQUASH）"
-  agent_harness: "ci.yaml 無 merge_group"
-  asset_converter: "main.yaml 無 merge_group"
   toml-bridge: "只有 release workflow，沒有 PR CI"
-  docker_harness: "test.yaml 無 merge_group"
-  .github: "check-* workflow 無 merge_group；repo 只開 squash/rebase"
   isaac_physics_test: "沒有 workflow"
-  realsense_ros2: "main.yaml 無 merge_group"
   system_repo_template: "沒有 workflow"
-  realsense_ros1: "main.yaml 無 merge_group"
   ci_bridge: "沒有 workflow"
-  seggpt: "main.yaml 無 merge_group"
-  jetson_sdk_manager: "main.yaml / drift-check.yaml 無 merge_group"
-  multi_run: "self-test.yaml 無 merge_group"
-  template: "ci.yaml / main.yaml 無 merge_group"
-  ros_distro: "main.yaml 無 merge_group"
-  ros2_distro: "main.yaml 無 merge_group"
-  ros1_bridge: "main.yaml 無 merge_group"
-  sick_noetic: "main.yaml 無 merge_group"
-  urg_node_noetic: "main.yaml 無 merge_group"
+  seggpt: "PR #28 已開未合併：main.yaml 加 merge_group 與聚合 job ci-rollup，但 call-docker-build 完整建置超過 60 分鐘，CI 尚未結束；合併後移到 repos（required_checks [ci-rollup]，check_response_timeout_minutes 建議 120；現有 branch protection 要求 'call-docker-build / docker-build'，啟用前改成 ci-rollup）"
   sick_humble: "main.yaml 無 merge_group"
   urg_node_humble: "main.yaml 無 merge_group"
   sam_manager: "main.yaml 無 merge_group"
