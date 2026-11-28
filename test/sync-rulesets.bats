@@ -214,3 +214,14 @@ assert unsupported <= config["unsupported"].keys(), unsupported - config["unsupp
 assert archived.isdisjoint(roster), archived & roster
 PY
 }
+
+@test "seggpt 的 merge queue check timeout 為 180 分鐘" {
+  python3 - "$root/rulesets.yaml" <<'PY'
+import sys
+import yaml
+
+with open(sys.argv[1], encoding="utf-8") as f:
+    config = yaml.safe_load(f)
+assert config["repos"]["seggpt"]["check_response_timeout_minutes"] == 180
+PY
+}
